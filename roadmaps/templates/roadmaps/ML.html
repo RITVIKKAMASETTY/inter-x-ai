@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Learning Roadmap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .roadmap {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            transition: width 0.3s ease;
+        }
+
+        .topic {
+            background-color: #ffffff;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .topic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .topic.completed {
+            background-color: #e8f5e9;
+            border: 2px solid #4CAF50;
+        }
+
+        .topic.completed h2 {
+            color: #2e7d32;
+            background-color: #c8e6c9;
+        }
+
+        .topic.completed .content {
+            background-color: #e8f5e9;
+        }
+
+        .topic.completed .topic-tag {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .topic h2 {
+            margin: 0;
+            padding: 20px;
+            font-weight: 600;
+            font-size: 1.2em;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .topic h2::after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.3s;
+        }
+
+        .topic.active h2::after {
+            transform: rotate(180deg);
+        }
+
+        .content {
+            display: none;
+            padding: 25px;
+            border-top: 1px solid #eee;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            color: #1976D2;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .content ul {
+            padding-left: 0;
+            margin: 10px 0;
+            list-style: none;
+        }
+
+        .content li {
+            margin: 12px 0;
+            color: #444;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .content li:hover {
+            background-color: #f5f5f5;
+        }
+
+        .content li::before {
+            content: "✓";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .resource-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            margin: 8px 0;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s;
+        }
+
+        .resource-link:hover {
+            background: #e3f2fd;
+            border-color: #90caf9;
+            transform: translateX(5px);
+        }
+
+        .resource-link a {
+            color: #1976D2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .resource-link svg {
+            width: 16px;
+            height: 16px;
+            color: #1976D2;
+        }
+
+        .topic-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-right: 8px;
+            background-color: #e3f2fd;
+            color: #1976D2;
+            transition: all 0.3s ease;
+        }
+
+        .content button {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #2196F3, #1976D2);
+            color: #ffffff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .content button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .topic.completed .content-section {
+            background: #f1f8e9;
+        }
+
+        .topic.completed .resource-link {
+            background: #e8f5e9;
+            border-color: #c8e6c9;
+        }
+
+        @media (max-width: 768px) {
+            .roadmap {
+                padding: 10px;
+            }
+            
+            .topic h2 {
+                font-size: 1.1em;
+                padding: 15px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+            
+            .content-section {
+                padding: 12px;
+            }
+            
+            .resource-link {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="roadmap">
+        <div class="header">
+            <h1>DevOps Learning Roadmap</h1>
+            <p>Track your progress through essential DevOps skills and technologies</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+            <p id="progressText" style="text-align: center; margin-top: 10px;">0% Complete</p>
+        </div>
+
+        <!-- Topics will be populated here -->
+    </div>
+
+    <script>
+        // Topic data structure
+        const topics = [
+    {
+        tag: "Mathematics",
+        title: "Mathematical Foundations",
+        concepts: [
+            "Linear algebra and matrices",
+            "Calculus and optimization",
+            "Probability and statistics",
+            "Information theory",
+            "Numerical computing",
+            "Statistical hypothesis testing"
+        ],
+        resources: [
+            {
+                title: "Khan Academy - Linear Algebra",
+                url: "https://www.khanacademy.org/math/linear-algebra"
+            },
+            {
+                title: "Mathematics for Machine Learning",
+                url: "https://mml-book.github.io/"
+            },
+            {
+                title: "3Blue1Brown - Essence of Linear Algebra",
+                url: "https://www.3blue1brown.com/topics/linear-algebra"
+            }
+        ]
+    },
+    {
+        tag: "Programming",
+        title: "Python for ML",
+        concepts: [
+            "NumPy for numerical computing",
+            "Pandas for data manipulation",
+            "Matplotlib and Seaborn for visualization",
+            "Jupyter notebooks",
+            "Object-oriented programming",
+            "Python best practices for ML"
+        ],
+        resources: [
+            {
+                title: "Python Data Science Handbook",
+                url: "https://jakevdp.github.io/PythonDataScienceHandbook/"
+            },
+            {
+                title: "Real Python Tutorials",
+                url: "https://realpython.com/"
+            },
+            {
+                title: "DataCamp Python Courses",
+                url: "https://www.datacamp.com/tracks/python-programmer"
+            }
+        ]
+    },
+    {
+        tag: "DataPrep",
+        title: "Data Preprocessing",
+        concepts: [
+            "Data cleaning and validation",
+            "Feature engineering",
+            "Feature selection and dimensionality reduction",
+            "Data normalization and standardization",
+            "Handling missing data",
+            "Data augmentation techniques"
+        ],
+        resources: [
+            {
+                title: "Scikit-learn Preprocessing",
+                url: "https://scikit-learn.org/stable/modules/preprocessing.html"
+            },
+            {
+                title: "Feature Engineering for ML",
+                url: "https://www.featureengineering.com/"
+            },
+            {
+                title: "Data Cleaning Guide",
+                url: "https://towardsdatascience.com/the-ultimate-guide-to-data-cleaning-3969843991d4"
+            }
+        ]
+    },
+    {
+        tag: "Supervised",
+        title: "Supervised Learning",
+        concepts: [
+            "Linear and logistic regression",
+            "Decision trees and random forests",
+            "Support vector machines",
+            "Neural networks fundamentals",
+            "Ensemble methods",
+            "Model evaluation and validation"
+        ],
+        resources: [
+            {
+                title: "Scikit-learn Documentation",
+                url: "https://scikit-learn.org/stable/"
+            },
+            {
+                title: "Fast.ai Practical Deep Learning",
+                url: "https://course.fast.ai/"
+            },
+            {
+                title: "Stanford CS229",
+                url: "https://cs229.stanford.edu/"
+            }
+        ]
+    },
+    {
+        tag: "Unsupervised",
+        title: "Unsupervised Learning",
+        concepts: [
+            "Clustering algorithms",
+            "Dimensionality reduction techniques",
+            "Anomaly detection",
+            "Association rule learning",
+            "Generative models",
+            "Self-organizing maps"
+        ],
+        resources: [
+            {
+                title: "Clustering Guide",
+                url: "https://scikit-learn.org/stable/modules/clustering.html"
+            },
+            {
+                title: "Unsupervised Learning Tutorial",
+                url: "https://www.kaggle.com/learn/unsupervised-learning"
+            },
+            {
+                title: "PCA Explained",
+                url: "https://setosa.io/ev/principal-component-analysis/"
+            }
+        ]
+    },
+    {
+        tag: "DeepLearning",
+        title: "Deep Learning",
+        concepts: [
+            "Neural network architectures",
+            "Convolutional neural networks",
+            "Recurrent neural networks",
+            "Transformers and attention mechanisms",
+            "Transfer learning",
+            "Model optimization and regularization"
+        ],
+        resources: [
+            {
+                title: "Deep Learning Book",
+                url: "https://www.deeplearningbook.org/"
+            },
+            {
+                title: "TensorFlow Documentation",
+                url: "https://www.tensorflow.org/learn"
+            },
+            {
+                title: "PyTorch Tutorials",
+                url: "https://pytorch.org/tutorials/"
+            }
+        ]
+    },
+    {
+        tag: "MLOps",
+        title: "ML Operations",
+        concepts: [
+            "Model deployment and serving",
+            "ML pipelines and automation",
+            "Model monitoring and maintenance",
+            "Version control for ML",
+            "A/B testing",
+            "Model optimization and compression"
+        ],
+        resources: [
+            {
+                title: "MLOps on Azure",
+                url: "https://learn.microsoft.com/en-us/azure/machine-learning/"
+            },
+            {
+                title: "Google MLOps Guide",
+                url: "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines"
+            },
+            {
+                title: "ML in Production",
+                url: "https://mlinproduction.com/"
+            }
+        ]
+    },
+    {
+        tag: "Ethics",
+        title: "AI Ethics & Responsible ML",
+        concepts: [
+            "Bias and fairness in ML",
+            "Model interpretability and explainability",
+            "Privacy-preserving ML",
+            "Ethical AI principles",
+            "Regulatory compliance",
+            "Sustainable AI practices"
+        ],
+        resources: [
+            {
+                title: "AI Ethics Guidelines",
+                url: "https://www.microsoft.com/en-us/ai/responsible-ai"
+            },
+            {
+                title: "Fairness in ML",
+                url: "https://fairmlbook.org/"
+            },
+            {
+                title: "Interpretable ML Book",
+                url: "https://christophm.github.io/interpretable-ml-book/"
+            }
+        ]
+    },
+    {
+        tag: "Applications",
+        title: "Applied ML",
+        concepts: [
+            "Computer vision applications",
+            "Natural language processing",
+            "Time series analysis",
+            "Recommender systems",
+            "Reinforcement learning",
+            "Speech recognition"
+        ],
+        resources: [
+            {
+                title: "Hugging Face Documentation",
+                url: "https://huggingface.co/docs"
+            },
+            {
+                title: "OpenCV Tutorials",
+                url: "https://docs.opencv.org/master/d9/df8/tutorial_root.html"
+            },
+            {
+                title: "Coursera Applied ML",
+                url: "https://www.coursera.org/specializations/applied-data-science"
+            }
+        ]
+    },
+    {
+        tag: "Tools",
+        title: "ML Tools & Frameworks",
+        concepts: [
+            "TensorFlow and Keras",
+            "PyTorch ecosystem",
+            "Scikit-learn",
+            "MLflow for experiment tracking",
+            "DVC for ML version control",
+            "Weights & Biases for experiment management"
+        ],
+        resources: [
+            {
+                title: "ML Tools Comparison",
+                url: "https://www.datacamp.com/community/tutorials/machine-learning-tools"
+            },
+            {
+                title: "MLflow Documentation",
+                url: "https://www.mlflow.org/docs/latest/index.html"
+            },
+            {
+                title: "W&B Documentation",
+                url: "https://docs.wandb.ai/"
+            }
+        ]
+    }
+];
+        // Function to create a topic element
+        function createTopicElement(topic) {
+            const topicElement = document.createElement('div');
+            topicElement.className = 'topic';
+            topicElement.setAttribute('data-completed', 'false');
+            topicElement.onclick = () => toggleContent(topicElement);
+
+            topicElement.innerHTML = `
+                <h2><span class="topic-tag">${topic.tag}</span>${topic.title}</h2>
+                <div class="content">
+                    <div class="content-section">
+                        <div class="section-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Key Concepts
+                        </div>
+                        <ul>
+                            ${topic.concepts.map(concept => `<li>${concept}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="content-section">
+                        <div class="section-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Learning Resources
+                        </div>
+                        ${topic.resources.map(resource => `
+                            <div class="resource-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15 3 21 3 21 9"/>
+                                    <line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                <a href="${resource.url}" target="_blank">${resource.title}</a>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <button onclick="markCompleted(event, this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                        Mark as Completed
+                    </button>
+                </div>
+            `;
+
+            return topicElement;
+        }
+
+        // Function to initialize the roadmap
+        function initializeRoadmap() {
+            const roadmap = document.querySelector('.roadmap');
+            topics.forEach(topic => {
+                roadmap.appendChild(createTopicElement(topic));
+            });
+        }
+
+        function toggleContent(topicElement) {
+            const content = topicElement.querySelector('.content');
+            const isCompleted = topicElement.getAttribute('data-completed') === 'true';
+            
+            topicElement.classList.toggle('active');
+            
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+            
+            if (!isCompleted) {
+                topicElement.classList.remove('completed');
+            }
+        }
+
+        function markCompleted(event, buttonElement) {
+            event.stopPropagation();
+            const topicElement = buttonElement.closest('.topic');
+            topicElement.setAttribute('data-completed', 'true');
+            topicElement.classList.add('completed');
+            buttonElement.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Completed!
+            `;
+            buttonElement.style.backgroundColor = '#4CAF50';
+            buttonElement.style.cursor = 'default';
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const topics = document.querySelectorAll('.topic');
+            const completedTopics = document.querySelectorAll('.topic[data-completed="true"]');
+            const progressPercentage = (completedTopics.length / topics.length) * 100;
+            
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            progressBar.style.width = progressPercentage + '%';
+            progressText.textContent = Math.round(progressPercentage) + '% Complete';
+        }
+
+        // Initialize the roadmap when the page loads
+        document.addEventListener('DOMContentLoaded', initializeRoadmap);
+    </script>
+</body>
+</html>

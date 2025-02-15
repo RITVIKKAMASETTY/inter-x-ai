@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login with Spline</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+<style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            background-color: #f8f9fa; /* Light background for better contrast */
+        }
+
+        .spline-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        .card {
+            z-index: 1;
+            margin-top: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            width: 100%; /* Ensure the card spans the full width */
+            max-width: 600px; /* Limit max width on larger screens */
+            padding: 20px;
+        }
+
+        .form-control {
+            border-radius: 30px;
+            height: 45px;
+            padding: 10px 20px;
+            font-size: 16px;
+            width: 100%; /* Ensures input fields stretch */
+        }
+
+        .btn-primary {
+            border-radius: 30px;
+            height: 45px;
+            font-size: 16px;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border: none;
+            transition: background 0.3s ease-in-out;
+            width: 100%; /* Makes the button span the full width */
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #0072ff, #00c6ff);
+            box-shadow: 0 5px 15px rgba(0, 114, 255, 0.3);
+        }
+
+        h3 {
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            font-size: 1.8rem; /* Default size for larger screens */
+        }
+
+        label {
+            font-weight: 500;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1024px) {
+            .card {
+                max-width: 90%; /* Adjust card width for tablet screens */
+                margin-top: 20px;
+            }
+
+            h3 {
+                font-size: 1.6rem; /* Adjust heading size for tablets */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                max-width: 90%;
+                margin: 20px auto; /* Margin on all sides for mobile */
+                padding: 15px;
+            }
+
+            .form-control {
+                height: 40px;
+                font-size: 14px;
+            }
+
+            .btn-primary {
+                height: 40px;
+                font-size: 14px;
+            }
+
+            h3 {
+                font-size: 1.4rem; /* Smaller font size for mobile */
+            }
+
+            .container {
+                height: auto;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                max-width: 90%;
+                margin: 10px auto; /* Adjust margin for very small screens */
+                padding: 10px;
+            }
+
+            .form-control {
+                height: 35px;
+                font-size: 12px;
+            }
+
+            .btn-primary {
+                height: 35px;
+                font-size: 12px;
+            }
+
+            h3 {
+                font-size: 1.2rem; /* Further reduced font size */
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Spline Embed -->
+    <div class="spline-container">
+        <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.48/build/spline-viewer.js"></script>
+        <spline-viewer url="https://prod.spline.design/Ic5bA74ogv-eXzmF/scene.splinecode"></spline-viewer>
+    </div>
+    <!-- Login Form -->
+    <div class="container">
+        <div class="card p-4">
+            <h3 class="text-center mb-4">Organization Login</h3>
+            <form method="POST">
+                                {% csrf_token %}
+
+                                <div class="form-outline mb-4">
+                                    <input type="text" name="username" id="id_username" class="form-control" placeholder="Username" required>
+                                    <label class="form-label" for="id_username">Username</label>
+                                    {% if form.username.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.username.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-outline mb-4">
+                                    <input type="password" name="password" id="id_password" class="form-control" placeholder="Password" required>
+                                    <label class="form-label" for="id_password">Password</label>
+                                    {% if form.password.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.password.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if form.non_field_errors %}
+                                    <div class="text-danger mb-4">
+                                        {% for error in form.non_field_errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <div class="text-center mb-4">
+                                    <button class="btn btn-primary btn-block" type="submit">
+                                        Sign In
+                                    </button>
+                                </div>
+
+                                <div class="text-center">
+                                    <p class="mb-0">Don't have an account?
+                                        <a href="{% url 'reg' %}" class="text-primary fw-bold">Create account</a>
+                                    </p>
+                                </div>
+                <div class="text-center">
+    <p class="mb-0">
+        <a href="{% url 'forgot_password' %}" class="text-primary">Forgot Password?</a>
+                <a href="{% url 'login' %}" class="text-primary">Login as User</a>
+
+    </p>
+</div>
+                            </form>
+        </div>
+    </div>
+</body>
+</html>

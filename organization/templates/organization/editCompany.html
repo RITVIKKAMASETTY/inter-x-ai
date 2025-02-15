@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Company Profile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideIn 0.5s forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .input-field {
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+        }
+
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .profile-section {
+            animation-delay: 0.2s;
+        }
+
+        .details-section {
+            animation-delay: 0.4s;
+        }
+
+        .description-section {
+            animation-delay: 0.6s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+                <!-- Header remains the same -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-400 p-8">
+                    <h1 class="text-3xl font-bold text-white text-center">Edit Company Profile</h1>
+                    <p class="text-blue-100 text-center mt-2">Update your organization's information</p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" class="p-8 space-y-8">
+                    {% csrf_token %}
+
+                    <!-- Updated Profile Photo Section -->
+                    <div class="form-section profile-section">
+                        <div class="flex items-center justify-center">
+                            <div class="relative">
+                                <div class="w-32 h-32 rounded-full bg-blue-50 border-4 border-blue-100 flex items-center justify-center overflow-hidden">
+                                    {% if form.instance.photo %}
+                                        <img src="{{ form.instance.photo.url }}" alt="Company Profile" class="w-full h-full object-cover" id="preview-image">
+                                    {% else %}
+                                        <img src="" alt="Company Profile" class="w-full h-full object-cover hidden" id="preview-image">
+                                        <svg class="w-20 h-20 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="default-image">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <label for="id_photo" class="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition-colors">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </label>
+                                <input type="file" id="id_photo" name="photo" class="hidden" accept="image/*" onchange="previewImage(this);">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Details Section -->
+                    <div class="form-section details-section space-y-6">
+                        <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">Company Details</h2>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="space-y-2">
+                                <label for="id_orgname" class="block text-sm font-medium text-gray-700">
+                                    Organization Name
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                    </span>
+                                    <input type="text" name="orgname" id="id_orgname"
+                                           class="input-field pl-10 w-full rounded-lg py-2 px-4 text-gray-700 focus:outline-none"
+                                           placeholder="Enter organization name"
+                                           value="{{ form.orgname.value|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="id_address" class="block text-sm font-medium text-gray-700">
+                                    Address
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </span>
+                                    <input type="text" name="address" id="id_address"
+                                           class="input-field pl-10 w-full rounded-lg py-2 px-4 text-gray-700 focus:outline-none"
+                                           placeholder="Enter company address"
+                                           value="{{ form.address.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description Section -->
+                    <div class="form-section description-section space-y-4">
+                        <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">About Company</h2>
+                        <div>
+                            <label for="id_Description" class="block text-sm font-medium text-gray-700 mb-2">
+                                Description
+                            </label>
+                            <textarea name="Description" id="id_Description"
+                                      class="input-field w-full rounded-lg py-2 px-4 text-gray-700 focus:outline-none"
+                                      placeholder="Tell us about your company..."
+                                      rows="4">{{ form.Description.value|default:'' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-section mt-8 flex justify-end">
+                        <button type="submit" class="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(input) {
+            const preview = document.getElementById('preview-image');
+            const defaultImage = document.getElementById('default-image');
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    if (defaultImage) {
+                        defaultImage.classList.add('hidden');
+                    }
+                };
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

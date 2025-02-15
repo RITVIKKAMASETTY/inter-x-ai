@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Custom Interview</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #0073b1;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #0073b1;
+        }
+        .container h2 {
+            color: #0073b1;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            color: #0073b1;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .datetime-input {
+            background-color: white;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #0073b1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .submit-btn:hover {
+            background-color: #005f8d;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #f2f2f2;
+            margin-top: 20px;
+        }
+        .errorlist {
+            color: #dc3545;
+            list-style: none;
+            padding: 0;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        #id_desc {
+            min-height: 100px;
+        }
+        #id_questions {
+            min-height: 150px;
+        }
+        #id_experience {
+            width: 100%;
+        }
+        #id_startTime, #id_endTime {
+            margin-bottom: 10px;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Schedule Custom Interview</h1>
+    </header>
+    <div class="container">
+        <h2>Interview Details</h2>
+        <form method="POST" id="interview-form" onsubmit="return validateForm()">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_desc">Description</label>
+                <textarea name="desc" id="id_desc" placeholder="Enter interview description" required>{{ form.desc.value|default:'' }}</textarea>
+                {% if form.desc.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.desc.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_post">Position</label>
+                <input type="text" name="post" id="id_post" value="{{ form.post.value|default:'' }}" required>
+                {% if form.post.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.post.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_questions">Interview Questions</label>
+                <textarea name="questions" id="id_questions" placeholder="Enter interview questions" required>{{ form.questions.value|default:'' }}</textarea>
+                {% if form.questions.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.questions.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_experience">Required Experience (years)</label>
+                <input type="number" name="experience" id="id_experience" value="{{ form.experience.value|default:'' }}" min="0" step="1" required>
+                {% if form.experience.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.experience.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_submissionDeadline">Resume Submission Deadline</label>
+                <input type="datetime-local" name="submissionDeadline" id="id_submissionDeadline" class="datetime-input"
+                       value="{{ form.submissionDeadline.value|date:'Y-m-d\TH:i'|default:'' }}" required>
+                <div class="error-message" id="deadline-error"></div>
+                {% if form.submissionDeadline.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.submissionDeadline.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_startTime">Interview Start Time</label>
+                <input type="datetime-local" name="startTime" id="id_startTime" class="datetime-input"
+                       value="{{ form.startTime.value|date:'Y-m-d\TH:i'|default:'' }}" required>
+                <div class="error-message" id="start-error"></div>
+                {% if form.startTime.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.startTime.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_endTime">Interview End Time</label>
+                <input type="datetime-local" name="endTime" id="id_endTime" class="datetime-input"
+                       value="{{ form.endTime.value|date:'Y-m-d\TH:i'|default:'' }}" required>
+                <div class="error-message" id="end-error"></div>
+                {% if form.endTime.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.endTime.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="submit-btn">Schedule Interview</button>
+        </form>
+    </div>
+    <footer>
+        <p>&copy; 2025 Interview Portal. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Add event listeners to validate dates on input change
+        document.getElementById('id_submissionDeadline').addEventListener('input', validateDates);
+        document.getElementById('id_startTime').addEventListener('input', validateDates);
+        document.getElementById('id_endTime').addEventListener('input', validateDates);
+
+        function validateDates() {
+            const submissionDeadline = new Date(document.getElementById('id_submissionDeadline').value);
+            const startTime = new Date(document.getElementById('id_startTime').value);
+            const endTime = new Date(document.getElementById('id_endTime').value);
+
+            const deadlineError = document.getElementById('deadline-error');
+            const startError = document.getElementById('start-error');
+            const endError = document.getElementById('end-error');
+
+            // Reset error messages
+            deadlineError.style.display = 'none';
+            startError.style.display = 'none';
+            endError.style.display = 'none';
+
+            // Validate submission deadline
+            if (submissionDeadline >= startTime) {
+                deadlineError.textContent = 'Submission deadline must be before the interview start time';
+                deadlineError.style.display = 'block';
+            }
+
+            // Validate start time
+            if (startTime >= endTime) {
+                startError.textContent = 'Start time must be before the end time';
+                startError.style.display = 'block';
+            }
+
+            // Validate end time
+            if (endTime <= startTime) {
+                endError.textContent = 'End time must be after the start time';
+                endError.style.display = 'block';
+            }
+        }
+
+        function validateForm() {
+            const submissionDeadline = new Date(document.getElementById('id_submissionDeadline').value);
+            const startTime = new Date(document.getElementById('id_startTime').value);
+            const endTime = new Date(document.getElementById('id_endTime').value);
+
+            if (submissionDeadline >= startTime || startTime >= endTime) {
+                validateDates(); // Show all relevant error messages
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+</body>
+</html>

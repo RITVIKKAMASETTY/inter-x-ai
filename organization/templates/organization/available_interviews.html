@@ -1,0 +1,432 @@
+<!--{% load custom_filters %}-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Available Interviews</title>-->
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            background-color: #f8f9fa;-->
+<!--            color: #212529;-->
+<!--            min-height: 100vh;-->
+<!--            position: relative;-->
+<!--            padding-bottom: 60px;-->
+<!--        }-->
+<!--        .navbar {-->
+<!--            background-color: #007bff;-->
+<!--        }-->
+<!--        .navbar-brand, .nav-link {-->
+<!--            color: white !important;-->
+<!--        }-->
+<!--        .card {-->
+<!--            background-color: white;-->
+<!--            border: 1px solid #007bff;-->
+<!--            border-radius: 10px;-->
+<!--        }-->
+<!--        .footer {-->
+<!--            background-color: #007bff;-->
+<!--            color: white;-->
+<!--            text-align: center;-->
+<!--            padding: 10px;-->
+<!--            position: absolute;-->
+<!--            bottom: 0;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <nav class="navbar navbar-expand-lg">-->
+<!--        <div class="container">-->
+<!--            <a class="navbar-brand" href="#">Interview Portal</a>-->
+<!--        </div>-->
+<!--    </nav>-->
+
+<!--    <div class="container mt-4">-->
+<!--        <h2 class="text-primary">Available Interviews</h2>-->
+
+<!--        {% if messages %}-->
+<!--        <div class="messages">-->
+<!--            {% for message in messages %}-->
+<!--            <div class="alert alert-{{ message.tags }}">-->
+<!--                {{ message }}-->
+<!--            </div>-->
+<!--            {% endfor %}-->
+<!--        </div>-->
+<!--        {% endif %}-->
+
+<!--        <div class="row">-->
+<!--            {% for interview in interviews %}-->
+<!--            <div class="col-md-6 mb-4">-->
+<!--                <div class="card p-3 shadow-sm">-->
+<!--                    <div class="card-body">-->
+<!--                        <h5 class="card-title text-primary">{{ interview.post }} at {{ interview.org.orgname }}</h5>-->
+<!--                        <p class="card-text">{{ interview.desc|truncatewords:30 }}</p>-->
+<!--                        <p><strong>Experience Required:</strong> {{ interview.experience }}</p>-->
+<!--                        <p><strong>Deadline:</strong> {{ interview.submissionDeadline|date:"F d, Y H:i" }}</p>-->
+
+<!--                        {% with application_status|get_item:interview.id as status %}-->
+<!--                            {% if status %}-->
+<!--                                <div class="alert {% if status.is_approved %}alert-success{% else %}alert-info{% endif %}">-->
+<!--                                    <p class="mb-2">Application Status:</p>-->
+<!--                                    <ul class="list-unstyled mb-0">-->
+<!--                                        <li>Resume: Uploaded</li>-->
+<!--                                        <li>Status:-->
+<!--                                            {% if status.is_approved %}-->
+<!--                                                Approved-->
+<!--                                            {% else %}-->
+<!--                                                Pending Review-->
+<!--                                            {% endif %}-->
+<!--                                        </li>-->
+<!--                                        {% if status.is_approved %}-->
+<!--                                            <li>Interview Time:-->
+<!--                                                {{ status.interview_start|date:"F d, Y H:i" }} - -->
+<!--                                                {{ status.interview_end|date:"F d, Y H:i" }}-->
+<!--                                            </li>-->
+<!--                                        {% endif %}-->
+<!--                                    </ul>-->
+<!--                                </div>-->
+
+<!--                                {% if status.is_approved %}-->
+<!--                                    {% if status.attempted %}-->
+<!--                                        <div class="alert alert-info">-->
+<!--                                            Already Attempted-->
+<!--                                        </div>-->
+<!--                                    {% elif status.can_start_interview %}-->
+<!--                                        <a href="{% url 'compchatcreate' status.application_id %}"-->
+<!--                                           class="btn btn-success">Start Interview</a>-->
+<!--                                    {% else %}-->
+<!--                                        {% if current_time < status.interview_start %}-->
+<!--                                            <div class="alert alert-warning">-->
+<!--                                                Interview will be available at {{ status.interview_start|date:"F d, Y H:i" }}-->
+<!--                                            </div>-->
+<!--                                        {% elif current_time > status.interview_end %}-->
+<!--                                            <div class="alert alert-danger">-->
+<!--                                                Interview time has expired-->
+<!--                                            </div>-->
+<!--                                        {% endif %}-->
+<!--                                    {% endif %}-->
+<!--                                {% endif %}-->
+<!--                            {% else %}-->
+<!--                                <form method="post" action="{% url 'apply_interview' interview.id %}" enctype="multipart/form-data">-->
+<!--                                    {% csrf_token %}-->
+<!--                                    <div class="mb-3">-->
+<!--                                        <label for="resume" class="form-label">Upload Resume (PDF, DOC, DOCX)</label>-->
+<!--                                        <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx" required>-->
+<!--                                    </div>-->
+<!--                                    <button type="submit" class="btn btn-primary">Apply</button>-->
+<!--                                </form>-->
+<!--                            {% endif %}-->
+<!--                        {% endwith %}-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            {% empty %}-->
+<!--            <div class="col-12">-->
+<!--                <p>No available interviews at the moment.</p>-->
+<!--            </div>-->
+<!--            {% endfor %}-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <footer class="footer">-->
+<!--        <p class="mb-0">&copy; 2025 Interview Portal. All Rights Reserved.</p>-->
+<!--    </footer>-->
+<!--</body>-->
+<!--</html>-->
+
+
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Interviews</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --background-color: #f8fafc;
+        }
+
+        body {
+            background-color: var(--background-color);
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 60px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .interview-list-item {
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .interview-header {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s ease;
+        }
+
+        .interview-header:hover {
+            background-color: #f8fafc;
+        }
+
+        .interview-header.active {
+            background-color: #f0f9ff;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .interview-content {
+            display: none;
+            padding: 1.5rem;
+            background: white;
+        }
+
+        .interview-content.show {
+            display: block;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .deadline-badge {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand text-white" href="#">
+                <i class="fas fa-briefcase me-2"></i>
+                Interview Portal
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2 class="mb-4">Available Interviews</h2>
+
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="interview-list">
+            {% for interview in interviews %}
+            <div class="interview-list-item">
+                <div class="interview-header" onclick="toggleInterview(this)">
+                    <div>
+                        <h5 class="mb-1">{{ interview.post }}</h5>
+                        <small class="text-muted">{{ interview.org.orgname }}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="deadline-badge me-3">
+                            <i class="fas fa-clock me-1"></i>
+                            Deadline: {{ interview.submissionDeadline|date:"M d, Y" }}
+                        </span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                </div>
+
+                <div class="interview-content">
+                    <div class="mb-4">
+                        <h6>Description</h6>
+                        <p>{{ interview.desc }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <i class="fas fa-briefcase me-2"></i>
+                        <strong>Experience Required:</strong> {{ interview.experience }}
+                    </div>
+
+                    <div class="mb-4">
+                        <i class="fas fa-clock me-2"></i>
+                        <strong>Deadline:</strong> {{ interview.submissionDeadline|date:"F d, Y H:i" }}
+                    </div>
+
+                    {% with application_status|get_item:interview.id as status %}
+                        {% if status %}
+                            <div class="alert {% if status.is_approved %}alert-success{% else %}alert-info{% endif %} bg-opacity-75">
+                                <h6 class="mb-3">Application Status</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <i class="fas fa-file-alt me-2"></i>
+                                        Resume: Uploaded
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Status:
+                                        <span class="status-badge {% if status.is_approved %}status-approved{% else %}status-pending{% endif %}">
+                                            {% if status.is_approved %}
+                                                Approved
+                                            {% else %}
+                                                Pending Review
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    {% if status.is_approved %}
+                                        <li>
+                                            <i class="fas fa-calendar-alt me-2"></i>
+                                            Interview Time:
+                                            <div class="ms-4 mt-2">
+                                                <div>Start: {{ status.interview_start|date:"F d, Y H:i" }}</div>
+                                                <div>End: {{ status.interview_end|date:"F d, Y H:i" }}</div>
+                                            </div>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+
+                            {% if status.is_approved %}
+                                {% if status.attempted %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-check-double me-2"></i>
+                                        Already Attempted
+                                    </div>
+                                {% elif status.can_start_interview %}
+                                    <a href="{% url 'compchatcreate' status.application_id %}"
+                                       class="btn btn-success">
+                                       <i class="fas fa-play me-2"></i>
+                                       Start Interview
+                                    </a>
+                                {% else %}
+                                    {% if current_time < status.interview_start %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-clock me-2"></i>
+                                            Interview will be available at {{ status.interview_start|date:"F d, Y H:i" }}
+                                        </div>
+                                    {% elif current_time > status.interview_end %}
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            Interview time has expired
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <form method="post" action="{% url 'apply_interview' interview.id %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="resume" class="form-label">
+                                        <i class="fas fa-file-upload me-2"></i>
+                                        Upload Resume (PDF, DOC, DOCX)
+                                    </label>
+                                    <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    Apply Now
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No available interviews at the moment.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p class="mb-0">&copy; 2025 Interview Portal. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        function toggleInterview(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+
+            // Toggle the content
+            content.classList.toggle('show');
+
+            // Toggle header active state
+            header.classList.toggle('active');
+
+            // Toggle icon rotation
+            icon.classList.toggle('rotated');
+
+            // Close other open interviews
+            const allContents = document.querySelectorAll('.interview-content');
+            const allHeaders = document.querySelectorAll('.interview-header');
+            const allIcons = document.querySelectorAll('.toggle-icon');
+
+            allContents.forEach((item) => {
+                if (item !== content) {
+                    item.classList.remove('show');
+                }
+            });
+
+            allHeaders.forEach((item) => {
+                if (item !== header) {
+                    item.classList.remove('active');
+                }
+            });
+
+            allIcons.forEach((item) => {
+                if (item !== icon) {
+                    item.classList.remove('rotated');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Interview Simulator</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+.container {
+    max-width: 600px;
+    margin: 50px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #4CAF50;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="text"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.hidden {
+    display: none;
+}
+
+#feedback-section {
+    margin-top: 20px;
+    font-style: italic;
+}
+
+#score-section {
+    margin-top: 20px;
+}
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Interview Simulator</h1>
+        <div id="role-section">
+            <label for="role">Enter Job Role:</label>
+            <input type="text" id="role" placeholder="e.g., Web Developer">
+            <button id="start">Start Interview</button>
+        </div>
+        <div id="question-section" class="hidden">
+            <h2 id="question"></h2>
+            <input type="text" id="answer" placeholder="Your Answer">
+            <button id="submit-answer">Submit</button>
+            <button id="hint">Hint (-5 Points)</button>
+            <p id="hint-text"></p>
+        </div>
+        <div id="score-section">
+            <p>Score: <span id="score">0</span></p>
+        </div>
+        <div id="feedback-section"></div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            let score = 0;
+
+            $("#start").click(function () {
+                const role = $("#role").val();
+                if (!role) {
+                    alert("Please enter a job role.");
+                    return;
+                }
+
+                $.get("/interview_simulator/generate_question/", { role: role }, function (data) {
+                    $("#role-section").hide();
+                    $("#question-section").show();
+                    $("#question").text(data.question);
+                });
+            });
+
+            $("#hint").click(function () {
+                const question = $("#question").text();
+                if (!question) return;
+
+                $.get("/interview_simulator/generate_hint/", { question: question }, function (data) {
+                    $("#hint-text").text("Hint: " + data.hint);
+                    score -= 5;
+                    $("#score").text(score);
+                });
+            });
+
+            $("#submit-answer").click(function () {
+                const question = $("#question").text();
+                const userAnswer = $("#answer").val();
+
+                if (!question || !userAnswer) {
+                    alert("Please answer the question.");
+                    return;
+                }
+
+                $.get("/interview_simulator/generate_answer/", { question: question }, function (data) {
+                    const correctAnswer = data.answer;
+
+                    if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+                        alert("Correct! +10 points.");
+                        score += 10;
+                    } else {
+                        alert("Incorrect. The correct answer is: " + correctAnswer + ". -4 points.");
+                        score -= 4;
+                    }
+
+                    $("#score").text(score);
+
+                    // Generate next question
+                    $.get("/interview_simulator/generate_question/", { role: $("#role").val() }, function (data) {
+                        $("#question").text(data.question);
+                        $("#answer").val('');
+                        $("#hint-text").text('');
+                    });
+                });
+            });
+        });
+        let score = 0;
+
+$(document).ready(() => {
+    $("#start").click(() => {
+        const role = $("#role").val();
+        if (!role) {
+            alert("Please enter a job role.");
+            return;
+        }
+
+        // Start the interview and fetch the first question
+        fetchQuestion(role);
+        $("#role-section").addClass("hidden");
+        $("#question-section").removeClass("hidden");
+    });
+
+    $("#submit-answer").click(() => {
+        const question = $("#question").text();
+        const userAnswer = $("#answer").val();
+        if (!userAnswer) {
+            alert("Please provide an answer.");
+            return;
+        }
+
+        // Validate the answer
+        fetch("/api/answer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question, answer: userAnswer })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const correctAnswer = data.answer;
+            const isCorrect = data.correct;
+            if (isCorrect) {
+                score += 10;
+                $("#feedback-section").text("Correct! +10 Points.");
+            } else {
+                score -= 4;
+                $("#feedback-section").text(`Incorrect. The correct answer is: ${correctAnswer}. -4 Points.`);
+            }
+            $("#score").text(score);
+            fetchQuestion($("#role").val());
+        });
+    });
+
+    $("#hint").click(() => {
+        const question = $("#question").text();
+
+        fetch("/api/hint", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const hint = data.hint;
+            $("#hint-text").text(`Hint: ${hint}`);
+            score -= 5;
+            $("#score").text(score);
+        });
+    });
+});
+
+function fetchQuestion(role) {
+    fetch("/api/question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        const question = data.question;
+        $("#question").text(question);
+        $("#answer").val("");
+        $("#hint-text").text("");
+    });
+}
+    </script>
+</body>
+</html>

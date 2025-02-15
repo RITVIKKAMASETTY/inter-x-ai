@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation - {{ convo.post.post }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #000;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #006400;
+        }
+
+        h2 {
+            margin-top: 30px;
+            color: #006400;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background: #e8f5e9;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-user {
+            font-weight: bold;
+            color: #006400;
+        }
+
+        .chat-date {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            background: #006400;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        a:hover {
+            background: #004d00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Conversation for: {{ convo.post.post }}</h1>
+        <p><strong>Interview Date:</strong> {{ convo.time|date:"D, d M Y H:i" }}</p>
+
+        <h2>Chat History</h2>
+        {% if chats %}
+            <ul>
+                {% for chat in chats %}
+                    <li>
+                        <p><span class="chat-user">{{ chat.user }}:</span> {{ chat.question }}</p>
+                        <p class="chat-date"><i>{{ chat.created_at|date:"D, d M Y H:i" }}</i></p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No chats found for this conversation.</p>
+        {% endif %}
+
+        <a href="{% url 'previous_interviews' %}">Back to Previous Interviews</a>
+    </div>
+</body>
+</html>

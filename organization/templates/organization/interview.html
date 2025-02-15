@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection App</title>
+</head>
+<style>
+    body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    width: 400px;  /* Make the container square */
+    height: 400px; /* Same height as width to keep it square */
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h1 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    display: none; /* Hide title for simplicity, like in Zoom */
+}
+
+.video-container {
+    width: 100%;
+    height: 70%;  /* Make video feed occupy 70% of the square */
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+video, #video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;  /* Ensure the video fills the container while maintaining aspect ratio */
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    width: 100%; /* Make the button fit the width of the container */
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#video-feed {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+        height: auto;
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+
+    .video-container {
+        width: 100%;
+        height: 70%;
+    }
+}
+.end-meeting {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.end-meeting:hover {
+    background-color: darkred;
+}
+.video-container {
+    position: relative; /* Make it relative for absolute elements */
+    width: 100%;
+    height: 70%;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.video-container::before, .video-container::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Prevent interference with the video */
+}
+
+.video-container::before {
+    background: linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px);
+    background-size: 33.3% 100%, 100% 33.3%; /* Create a 3x3 grid */
+}
+
+.video-container::after {
+    border: 2px solid rgba(255, 255, 255, 0.5); /* Outer border */
+}
+
+</style>
+<body>
+
+<div class="container">
+    <h1>Face Detection & Confidence Tracker</h1>
+
+    <div class="video-container">
+        <img id="video-feed" src="/video_feed" alt="Video Feed">
+    </div>
+
+    <button id="toggle-camera-btn">Start Camera</button>
+    <button id="end-meeting-btn" class="end-meeting">End Meeting</button>
+</div>
+
+<script>
+    const toggleCameraBtn = document.getElementById('toggle-camera-btn');
+    const endMeetingBtn = document.getElementById('end-meeting-btn');
+    const videoFeed = document.getElementById('video-feed');
+
+    let isCameraOn = false;
+
+    toggleCameraBtn.addEventListener('click', () => {
+        fetch('/toggle_camera')
+            .then(response => response.text())
+            .then(data => {
+                if (data.includes("started")) {
+                    toggleCameraBtn.textContent = 'Stop Camera';
+                    isCameraOn = true;
+                    videoFeed.style.display = 'block';
+                    videoFeed.src = "/org/video_feed";
+                } else {
+                    toggleCameraBtn.textContent = 'Start Camera';
+                    isCameraOn = false;
+                    videoFeed.style.display = 'none';
+                    videoFeed.src = "";
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    });
+
+    endMeetingBtn.addEventListener('click', () => {
+        fetch('/end_meeting')
+            .then(() => {
+                window.location.href = "/org/end_meeting";
+            })
+            .catch(error => console.error("Error ending meeting:", error));
+    });
+</script>
+
+</body>
+</html>

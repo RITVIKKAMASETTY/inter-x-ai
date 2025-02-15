@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applications for {{ interview.post }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-4">
+        <div class="mb-4">
+            <h2>Applications for {{ interview.post }}</h2>
+            <p class="text-muted">Posted by {{ organization.orgname }}</p>
+        </div>
+
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">Interview Details</h5>
+                <p><strong>Description:</strong> {{ interview.desc }}</p>
+                <p><strong>Experience Required:</strong> {{ interview.experience }}</p>
+                <p><strong>Submission Deadline:</strong> {{ interview.submissionDeadline|date:"F d, Y H:i" }}</p>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h3>Applications ({{ applications.count }})</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Applicant Name</th>
+                            <th>Resume</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications %}
+                        <tr>
+                            <td>{{ application.user.username }}</td>
+                            <td>
+                                {% if application.resume %}
+                                <a href="{{ application.resume.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    View Resume
+                                </a>
+                                {% else %}
+                                <span class="text-muted">No resume uploaded</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if application.approved %}
+                                <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not application.approved %}
+                                <form method="post" action="{% url 'approve_application' application.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No applications received yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="{% url 'company_interviews' %}" class="btn btn-secondary">
+                Back to Interviews
+            </a>
+        </div>
+    </div>
+</body>
+</html>

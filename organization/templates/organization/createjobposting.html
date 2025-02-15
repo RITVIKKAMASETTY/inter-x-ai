@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job Opening</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #0073b1;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #0073b1;
+        }
+        .container h2 {
+            color: #0073b1;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            color: #0073b1;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .datetime-input {
+            background-color: white;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #0073b1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .submit-btn:hover {
+            background-color: #005f8d;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #f2f2f2;
+            margin-top: 20px;
+        }
+        .errorlist {
+            color: #dc3545;
+            list-style: none;
+            padding: 0;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        #id_desc {
+            min-height: 100px;
+        }
+        #id_experience {
+            width: 100%;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Post a Job Opening</h1>
+    </header>
+    <div class="container">
+        <h2>Job Details</h2>
+        <form method="POST" id="job-post-form" onsubmit="return validateForm()">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_desc">Description</label>
+                <textarea name="desc" id="id_desc" placeholder="Enter job description" required>{{ form.desc.value|default:'' }}</textarea>
+                {% if form.desc.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.desc.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_post">Position</label>
+                <input type="text" name="post" id="id_post" value="{{ form.post.value|default:'' }}" placeholder="Enter position title" required>
+                {% if form.post.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.post.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_experience">Required Experience (years)</label>
+                <input type="number" name="experience" id="id_experience" value="{{ form.experience.value|default:'' }}" min="0" step="1" required>
+                {% if form.experience.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.experience.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_deadline">Application Deadline</label>
+                <input type="datetime-local" name="deadline" id="id_deadline" class="datetime-input"
+                       value="{{ form.deadline.value|date:'Y-m-d\TH:i'|default:'' }}" required>
+                <div class="error-message" id="deadline-error"></div>
+                {% if form.deadline.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.deadline.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="submit-btn">Post Job</button>
+        </form>
+    </div>
+    <footer>
+        <p>&copy; 2025 Job Portal. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Add event listener to validate deadline on input change
+        document.getElementById('id_deadline').addEventListener('input', validateDeadline);
+
+        function validateDeadline() {
+            const deadline = new Date(document.getElementById('id_deadline').value);
+            const now = new Date();
+            const deadlineError = document.getElementById('deadline-error');
+
+            // Reset error message
+            deadlineError.style.display = 'none';
+
+            // Validate that deadline is in the future
+            if (deadline <= now) {
+                deadlineError.textContent = 'Deadline must be in the future';
+                deadlineError.style.display = 'block';
+            }
+        }
+
+        function validateForm() {
+            const deadline = new Date(document.getElementById('id_deadline').value);
+            const now = new Date();
+
+            if (deadline <= now) {
+                validateDeadline(); // Show error message
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+</body>
+</html>

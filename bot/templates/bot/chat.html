@@ -1,0 +1,366 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Speech-to-Text</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Unified Material Symbols Link -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.48/build/spline-viewer.js"></script>
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #ffffff;
+        }
+
+        .main-container {
+            width: 95%;
+            max-width: 1400px;
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .spline-viewer-container {
+            flex: 1;
+            height: 700px;
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        spline-viewer {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .chat-container {
+            flex: 1;
+            max-width: 45%;
+            background-color: #1e1e1e;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background-color: #006400;
+            color: #ffffff;
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            max-height: 550px;
+            overflow-y: auto;
+            background-color: #2e2e2e;
+            flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: #00cc00 #2e2e2e;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message .content {
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            line-height: 1.4;
+            word-wrap: break-word;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .message.user .content {
+            background-color: #00cc00;
+            color: #ffffff;
+            text-align: right;
+        }
+
+        .message.ai .content {
+            background-color: #333;
+            color: #ffffff;
+            text-align: left;
+        }
+
+        .message .time {
+            font-size: 0.75em;
+            color: #b0b0b0;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            background-color: #1e1e1e;
+            border-top: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-container {
+            display: flex;
+            flex: 1;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        #response-input {
+            width: 100%;
+            padding: 12px 48px 12px 18px;
+            border: 1px solid #555;
+            border-radius: 24px;
+            font-size: 1em;
+            outline: none;
+            background-color: #2e2e2e;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        #response-input:focus {
+            border-color: #00cc00;
+            box-shadow: 0 0 5px rgba(0, 204, 0, 0.5);
+        }
+
+        #mic-button {
+            position: absolute;
+            right: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 1.5em;
+            transition: color 0.3s ease;
+        }
+
+        .send-button {
+            padding: 12px 18px;
+            background-color: #00cc00;
+            color: #ffffff;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .send-button:hover {
+            background-color: #009900;
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="spline-viewer-container">
+        <spline-viewer url="https://prod.spline.design/oYiuUSnOHJTzdcPg/scene.splinecode"></spline-viewer>
+    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            Conversation for {{ convo.post.post }} with InterXAI
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            {% for question in questions %}
+            <div class="message {% if question.user == 'user' %}user{% else %}ai{% endif %}">
+                <div class="content" data-speak="{{ question.question }}">
+                    {{ question.question }}
+                </div>
+                <div class="time">
+                    {{ question.created_at|date:"D, d M Y H:i" }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-footer">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <input id="response-input" type="text" placeholder="Type your response..." required>
+                    <span id="mic-button" class="material-symbols-outlined">mic</span>
+                </div>
+                <button id="send-button" class="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const sendButton = document.getElementById('send-button');
+const responseInput = document.getElementById('response-input');
+const chatMessages = document.getElementById('chat-messages');
+const micButton = document.getElementById('mic-button');
+
+/**
+ * Sends a message to the server and handles the response.
+ */
+async function sendMessage() {
+    const responseText = responseInput.value.trim();
+    if (!responseText) return;
+
+    // Append user message to the chat
+    const userMessage = createMessageElement(responseText, 'user');
+    chatMessages.innerHTML += userMessage;
+    responseInput.value = '';
+    scrollToBottom();
+
+    try {
+        // Make the API call to the server
+        const response = await fetch("{% url 'chat' convo.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: JSON.stringify({ response: responseText }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Server response:", data);
+
+        // Append AI evaluation, reply, and next question
+        if (data.evaluation) {
+            const evaluationMessage = createMessageElement(
+                `Evaluation:${data.evaluation}`,
+                'ai'
+            );
+            chatMessages.innerHTML += evaluationMessage;
+        }
+        if (data.reply) {
+            const replyMessage = createMessageElement(data.reply, 'ai');
+            chatMessages.innerHTML += replyMessage;
+        }
+        if (data.next_question) {
+            const nextQuestionMessage = createMessageElement(data.next_question, 'ai');
+            chatMessages.innerHTML += nextQuestionMessage;
+        }
+
+        scrollToBottom();
+    } catch (error) {
+        console.error("Error sending message:", error);
+
+        // Append error message to chat
+        const errorMessage = createMessageElement(
+            `Error: ${error.message}`,
+            'ai'
+        );
+        chatMessages.innerHTML += errorMessage;
+        scrollToBottom();
+    }
+}
+
+/**
+ * Creates a chat message element with the given content and type.
+ * @param {string} content - The message content.
+ * @param {string} type - The type of message ('user' or 'ai').
+ * @returns {string} - The HTML string for the message.
+ */
+function createMessageElement(content, type) {
+    return `
+        <div class="message ${type}">
+            <div class="content">${content}</div>
+            <div class="time">${new Date().toLocaleString()}</div>
+        </div>
+    `;
+}
+
+/**
+ * Scrolls the chat messages container to the bottom.
+ */
+function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+/**
+ * Starts the speech recognition process and populates the input field.
+ */
+function startSpeechRecognition() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech recognition is not supported in this browser.");
+        return;
+    }
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = function () {
+        micButton.textContent = 'mic_off';
+        micButton.style.color = 'red';
+    };
+
+    recognition.onresult = function (event) {
+        const transcript = event.results[0][0].transcript;
+        responseInput.value = transcript;
+    };
+
+    recognition.onerror = function (event) {
+        console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.onend = function () {
+        micButton.textContent = 'mic';
+        micButton.style.color = 'white';
+    };
+
+    recognition.start();
+}
+
+// Event Listeners
+sendButton.addEventListener('click', sendMessage);
+responseInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') sendMessage();
+});
+micButton.addEventListener('click', startSpeechRecognition);
+
+// Ensure the chat automatically scrolls to the bottom on load
+window.onload = scrollToBottom;
+</script>
+</body>
+</html>

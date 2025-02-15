@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --white: #ffffff;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --text-dark: #1e293b;
+        }
+        a {
+        text-decoration :none;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--gray-50);
+            color: var(--text-dark);
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .close-btn {
+            display: none;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .close-btn {
+                display: block !important;
+            }
+        }
+
+        .sidebar-header {
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-decoration : None;
+        }
+
+        .nav-item {
+            padding: 0.875rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-dark);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: var(--white);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .profile {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        .profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 1rem;
+            object-fit: cover;
+            border: 4px solid var(--primary-light);
+            flex-shrink: 0;
+        }
+
+        .profile-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .profile-details p {
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: 0.5rem;
+            border: 1px solid var(--gray-200);
+            min-width: 180px;
+            flex: 1;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            display: none;
+            padding: 1rem;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hamburger {
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+        }
+        .section {
+  text-align: center;
+  padding: 20px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card h3 {
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.card p {
+  color: #555;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+.section {
+  text-align: center;
+  padding: 20px;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* .stats-container div {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+} */
+
+/* .stats-container h3 {
+  margin-bottom: 10px;
+  color: #2c3e50;
+} */
+
+.stats-container img {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+                margin-top: 4rem;
+            }
+
+            .profile {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .profile img {
+                width: 80px;
+                height: 80px;
+            }
+
+            .profile-details {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .profile-details p {
+                width: 100%;
+                margin: 0;
+            }
+            .grid-container {
+    grid-template-columns: 1fr;
+  }
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+        }
+
+    </style>
+</head>
+<body>
+<div class="dashboard">
+        <!-- Mobile Navigation -->
+        <div class="mobile-nav">
+            <div class="hamburger" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </div>
+            <h3>Student Dashboard</h3>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="close-btn" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </div>
+            <div class="sidebar-header">
+                <h3>Welcome to InterXai</h3>
+            </div>
+            <ul class="nav-links">
+              <a href="{% url 'home' %}">  <li class="nav-item active">
+                    <i class="fas fa-home"></i> Dashboard
+                </li> </a>
+                <a href="{% url 'postings' %}"> <li class="nav-item">
+                    <i class="fas fa-briefcase "></i> Job Postings
+                </li></a>
+                <a href="{% url 'ats' %}"> <li class="nav-item">
+                    <i class="fas fa-file-alt"></i> Resume Evaluator
+                </li></a>
+              <a href="{% url 'gc' %}">  <li class="nav-item">
+                    <i class="fa-solid fa-user-group"></i> Community
+                </li> </a>
+                <a href="{% url 'available_interviews' %}"> <li class="nav-item">
+                    <i class="fas fa-video"></i> Available Interviews
+                </li> </a>
+                {% if a %}
+               <a href="{% url 'compdash' %}"> <li class="nav-item">
+                    <i class="fa-solid fa-building"></i> Continue as organization
+                </li></a>
+                {% else %}
+                <li class="nav-item">
+                    <i class="fas fa-cog"></i> Become a Organization
+                </li>
+                {% endif %}
+                 <a href="{% url 'editprofile' %}">  <li class="nav-item">
+                    <i class="fas fa-cog"></i> Settings
+                </li> </a>
+                <a href="{% url 'roadmaps' %}">
+                    <li class="nav-item">
+                        <i class="fa-solid fa-map-location"></i> roadmaps
+                    </li>
+                </a>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="profile">
+                    <img src="{{prof.photo.url}}" alt="Student Avatar">
+                    <div class="profile-details">
+                        <p><strong>Name:</strong> {{ user.username }}</p>
+                        <p><strong>Global Ranking:</strong> #1,234</p>
+                        <p><strong>Average Interview Score:</strong> 85%</p>
+                        <p><strong>Resume Score:</strong> 92%</p>
+                        <p><strong>Contact:</strong> {{ user.email }}</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="section">
+                    <h2>AI Interview Hub</h2>
+                    <div class="grid-container">
+                      <!-- Mock Interviews -->
+                      <div class="card">
+                        <h3>Mock Interviews</h3>
+                        <p>Practice AI-based mock interviews.</p>
+                      </div>
+                      <!-- Resume Evaluator -->
+                      <div class="card">
+                        <h3>Resume Evaluator</h3>
+                        <p>Get AI-based resume feedback.</p>
+                      </div>
+                      <!-- Job Applications -->
+                      <div class="card">
+                        <h3>Job Applications</h3>
+                        <p>Apply to AI-recommended jobs.</p>
+                      </div>
+                      <!-- Performance Heatmap -->
+                      <div class="card">
+                        <h3>Performance Heatmap</h3>
+                        <p>Analyze your interview progress.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="section">
+                    <h2>Progress Stats</h2>
+                    <div class="stats-container">
+                      <!-- LeetCode Stats -->
+                      <div>
+                        <div id="gp1"></div>
+                        <h3>LeetCode Progress</h3>
+                        <div id="gp"></div>
+                        <div align="center">
+                          <img src="https://leetcard.jacoblin.cool/{{ prof.leetcode }}?theme=dark&font=Adamina&ext=heatmap&animation=true&border=1&radius=20" alt="LeetCode Stats"/>
+                        </div>
+                      </div>
+                      <!-- GitHub Stats -->
+                      <div>
+                        <div id="gp1"></div>
+                        <h3>GitHub Activity</h3>
+                        <div id="gp"></div>
+                        <div align="center">
+                          <img src="https://github-readme-stats.vercel.app/api?username={{ prof.github }}&show_icons=true&theme=tokyonight" alt="GitHub Stats" />
+                          <p align="center">
+                            <img src="https://github-readme-streak-stats.herokuapp.com/?user=sathwikshetty33&theme=tokyonight" alt="GitHub Streak"/>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </main>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

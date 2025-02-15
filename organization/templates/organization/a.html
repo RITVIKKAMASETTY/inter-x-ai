@@ -1,0 +1,503 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat & Interview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <script src="https://docs.opencv.org/4.5.4/opencv.js"></script>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.48/build/spline-viewer.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #F8F9FA;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .main-container {
+            width: 95%;
+            max-width: 1400px;
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 350px;
+            background-color: #007BFF;
+            border-radius: 12px;
+        }
+
+        .spline-viewer-container {
+            flex: 1;
+            height: 300px;
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            flex: 1;
+            max-width: 45%;
+            background-color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background-color: #007BFF;
+            color: white;
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            max-height: 550px;
+            overflow-y: auto;
+            flex: 1;
+            background-color: #F8F9FA;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user .content {
+            background-color: #007BFF;
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            align-self: flex-end;
+        }
+
+        .message.ai .content {
+            background-color: #0056b3;
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            align-self: flex-start;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            background-color: white;
+        }
+
+        #response-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 24px;
+            border: 1px solid #007BFF;
+            outline: none;
+        }
+
+        .send-button {
+            padding: 12px 18px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+        }
+
+        .malpractice-warning {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #dc3545;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .end-interview-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 16px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .end-interview-button:hover {
+            background-color: #c82333;
+        }
+
+        .mic-button {
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+           #videoElement {
+            width: 100%;
+            height: 350px;
+            background-color: #000; /* Changed to black for better video visibility */
+            border-radius: 12px;
+            object-fit: cover; /* Ensures video fills the container properly */
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="video-container">
+        <video id="videoElement" autoplay playsinline muted></video>
+        <div class="spline-viewer-container">
+            <spline-viewer url="https://prod.spline.design/oYiuUSnOHJTzdcPg/scene.splinecode"></spline-viewer>
+        </div>
+    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            AI Chat
+            <button class="end-interview-button" id="endInterviewButton">End Interview</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            {% for question in questions %}
+            <div class="message {{ question.user }}">
+                <div class="content">{{ question.question }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-footer">
+            <input id="response-input" type="text" placeholder="Type your response...">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <button class="mic-button" id="micButton">🎤</button>
+            <button class="send-button" id="send-button">Send</button>
+        </div>
+    </div>
+</div>
+<div class="malpractice-warning" id="malpracticeWarning">
+    ⚠ Warning: Tab switching detected! This will be recorded as potential malpractice.
+</div>
+
+<script>
+// Main Chat Interface Class
+class ChatInterface {
+    constructor(applicationId) {
+        this.applicationId = applicationId;
+        this.chatMessages = document.getElementById('chat-messages');
+        this.responseInput = document.getElementById('response-input');
+        this.sendButton = document.getElementById('send-button');
+        this.endInterviewButton = document.getElementById('endInterviewButton');
+        this.micButton = document.getElementById('micButton');
+        this.setupEventListeners();
+        this.initializeMediaFeatures();
+    }
+
+    setupEventListeners() {
+        this.sendButton.addEventListener('click', () => this.sendMessage());
+        this.responseInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.sendMessage();
+            }
+        });
+        this.endInterviewButton.addEventListener('click', () => this.endInterview());
+        this.micButton.addEventListener('click', () => this.toggleSpeechRecognition());
+    }
+
+    initializeMediaFeatures() {
+        // Initialize camera
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "user"
+            }
+        })
+        .then(stream => {
+            const videoElement = document.getElementById("videoElement");
+            videoElement.srcObject = stream;
+            videoElement.onloadedmetadata = () => videoElement.play();
+        })
+        .catch(err => console.error("Error accessing camera:", err));
+
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window) {
+            this.recognition = new webkitSpeechRecognition();
+            this.recognition.continuous = false;
+            this.recognition.lang = 'en-US';
+            this.recognition.onresult = (event) => {
+                this.responseInput.value = event.results[0][0].transcript;
+            };
+        }
+    }
+
+    toggleSpeechRecognition() {
+        if (this.recognition) {
+            this.recognition.start();
+            this.micButton.style.backgroundColor = '#dc3545';
+            this.recognition.onend = () => {
+                this.micButton.style.backgroundColor = '#007BFF';
+            };
+        }
+    }
+
+    speakMessage(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        speechSynthesis.speak(utterance);
+    }
+
+    async endInterview() {
+        try {
+            window.location.href = /org/evaluate-${this.applicationId}/;
+        } catch (error) {
+            console.error('Error ending interview:', error);
+        }
+    }
+
+    async sendMessage() {
+        const messageText = this.responseInput.value.trim();
+        if (!messageText) return;
+
+        this.addMessageToChat('user', messageText);
+        this.responseInput.value = '';
+
+        try {
+            const response = await fetch({% url 'compchat' convoid=convo.id %}, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                body: JSON.stringify({
+                    response: messageText,
+                    malpracticeReport: malpracticeDetector.getMalpracticeReport()
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.reply) {
+                this.addMessageToChat('ai', data.reply);
+                this.speakMessage(data.reply);
+            }
+
+            if (data.next_question) {
+                if (data.next_question.includes("INTERVIEW_COMPLETE")) {
+                    window.location.href = '/';
+                } else {
+                    this.addMessageToChat('ai', data.next_question);
+                    this.speakMessage(data.next_question);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.addMessageToChat('ai', 'Sorry, there was an error processing your message.');
+        }
+    }
+
+    addMessageToChat(type, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = message ${type};
+        messageDiv.innerHTML = <div class="content">${content}</div>;
+        this.chatMessages.appendChild(messageDiv);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+}
+
+// Malpractice Detection Class
+class MalpracticeDetector {
+    constructor(applicationId) {
+        this.applicationId = applicationId;
+        this.violations = [];
+        this.tabSwitchCount = 0;
+        this.isHidden = false;
+        this.startTime = Date.now();
+        this.initializeDetection();
+    }
+
+    initializeDetection() {
+        document.addEventListener('visibilitychange', () => {
+            this.handleVisibilityChange();
+        });
+
+        window.addEventListener('blur', () => {
+            this.handleWindowBlur();
+        });
+
+        window.addEventListener('focus', () => {
+            this.handleWindowFocus();
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            this.recordViolation('Page reload attempted');
+            e.preventDefault();
+            e.returnValue = '';
+        });
+    }
+
+    handleVisibilityChange() {
+        if (document.hidden) {
+            this.recordViolation('Tab switched or minimized');
+            this.showWarning();
+            this.tabSwitchCount++;
+            this.isHidden = true;
+        } else {
+            this.isHidden = false;
+        }
+        this.updateMalpracticeStatus();
+    }
+
+    handleWindowBlur() {
+        this.recordViolation('Window lost focus');
+        this.showWarning();
+        this.updateMalpracticeStatus();
+    }
+
+    handleWindowFocus() {
+        if (this.isHidden) {
+            this.recordViolation('Returned to tab');
+            this.isHidden = false;
+        }
+    }
+
+    recordViolation(type) {
+        const violation = {
+            type: type,
+            timestamp: new Date().toISOString(),
+            tabSwitchCount: this.tabSwitchCount
+        };
+        this.violations.push(violation);
+        this.sendViolationToServer(violation);
+    }
+
+    showWarning() {
+        const warning = document.getElementById('malpracticeWarning');
+        warning.style.display = 'block';
+        setTimeout(() => {
+            warning.style.display = 'none';
+        }, 3000);
+    }
+
+    updateMalpracticeStatus() {
+        const data = {
+            tabSwitches: this.tabSwitchCount,
+            violations: this.violations,
+            totalTime: (Date.now() - this.startTime) / 1000
+        };
+
+        fetch("{% url 'cheated' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                id: this.applicationId,
+                ...data
+            })
+        });
+    }
+
+    async sendViolationToServer(violation) {
+        try {
+            const response = await fetch("{% url 'cheated' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    id: this.applicationId,
+                    violation: violation
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to record violation');
+            }
+        } catch (error) {
+            console.error('Error recording violation:', error);
+        }
+    }
+
+    getMalpracticeReport() {
+        return {
+            totalViolations: this.violations.length,
+            tabSwitches: this.tabSwitchCount,
+            violationHistory: this.violations,
+            sessionDuration: (Date.now() - this.startTime) / 1000
+        };
+    }
+}
+
+// Global variable for the malpractice detector instance
+let malpracticeDetector;
+
+// Initialize everything when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const applicationId = '{{ applicationId }}';
+
+    // First check if user has already been marked as cheating
+    const isCheated = {{ is_cheated|lower }};
+    if (isCheated) {
+        alert("Access denied. Cheating detected!");
+        window.location.href = "{% url 'home' %}";
+        return;
+    }
+
+    // Initialize the chat interface and malpractice detector
+    const chatInterface = new ChatInterface(applicationId);
+    malpracticeDetector = new MalpracticeDetector(applicationId);
+
+    // Clean up resources when page is unloaded
+    window.addEventListener('beforeunload', () => {
+        if (chatInterface.videoElement && chatInterface.videoElement.srcObject) {
+            chatInterface.videoElement.srcObject.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+</script>
+</body>
+</html>

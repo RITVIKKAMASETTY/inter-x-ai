@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Multi-Room Chat</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --bg-color: #f0f2f5;
+            --message-bg: #f0f2f5;
+            --text-primary: #1f1f1f;
+            --text-secondary: #666;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .navbar-toggler {
+            border: none;
+            outline: none;
+        }
+
+        #main-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            height: calc(100vh - 100px);
+        }
+
+        #rooms-sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        .room-item {
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .room-item:hover, .room-item.active {
+            background-color: #e8f0fe;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        #chat-container {
+            flex-grow: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-area {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .chat-area.active {
+            display: flex;
+        }
+
+        .chat-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 65%;
+            margin-bottom: 10px;
+        }
+
+        .message-container.sent {
+            align-self: flex-end;
+        }
+
+        .message-container.received {
+            align-self: flex-start;
+        }
+
+        .username {
+            font-size: 0.8em;
+            margin-bottom: 2px;
+            color: var(--text-secondary);
+        }
+
+        .sent .username {
+            text-align: right;
+        }
+
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .sent .message-bubble {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .received .message-bubble {
+            background-color: var(--message-bg);
+            color: var(--text-primary);
+        }
+
+        .chat-form {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: var(--bg-color);
+            border-radius: 20px;
+            padding: 5px 10px;
+        }
+
+        .mic-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mic-button.recording {
+            color: red;
+        }
+
+        .chat-message-input {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 10px;
+            outline: none;
+        }
+
+        .send-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+        .room-creation {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#new-group-name {
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    width: 100%;
+}
+
+#create-group-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#create-group-btn:hover {
+    background-color: var(--primary-hover);
+}
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">SafeHaven</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{% url 'previous_interviews' %}">Previous Interviews</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'interview_simulator' %}">Simple Interview</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'gc' %}">Chat</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        More
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'create_group' %}">Create New Group</a></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div id="main-container">
+    <div id="rooms-sidebar">
+    <h4>Chat Rooms</h4>
+    <div class="room-creation">
+        <input type="text" id="new-group-name" class="form-control mb-2" placeholder="Enter group name">
+        <button id="create-group-btn" class="btn btn-primary w-100">Create Group</button>
+    </div>
+    {% for room in rooms %}
+    <div class="room-item" data-room="{{ room.roomName }}" data-room-id="{{ room.id }}">
+        {{ room.roomName }}
+    </div>
+    {% endfor %}
+</div>
+
+    <div id="chat-container">
+        {% for room in rooms %}
+        <div class="chat-area" data-room="{{ room.roomName }}" data-room-id="{{ room.id }}">
+            <div class="chat-log">
+                {% for message in messages %}
+                    {% if message.group.id == room.id %}
+                    <div class="message-container {% if message.user.username == request.user.username %}sent{% else %}received{% endif %}">
+                        <div class="username">{{ message.user.username }}</div>
+                        <div class="message-bubble">
+                            {{ message.message }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <form class="chat-form">
+                <div class="input-container">
+                    <button type="button" class="mic-button"><i class="fas fa-microphone"></i></button>
+                    <input class="chat-message-input" type="text" placeholder="Type a message...">
+                    <button type="button" class="send-button"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    class ChatRoom {
+        constructor(roomName, roomId) {
+            this.roomName = roomName;
+            this.roomId = roomId;
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            // Using room ID instead of room name in WebSocket URL
+            this.socket = new WebSocket(`${protocol}${window.location.host}/ws/chat/${this.roomId}/`);
+            this.chatArea = document.querySelector(`.chat-area[data-room-id="${roomId}"]`);
+            this.chatLog = this.chatArea.querySelector('.chat-log');
+            this.messageInput = this.chatArea.querySelector('.chat-message-input');
+            this.sendButton = this.chatArea.querySelector('.send-button');
+            this.micButton = this.chatArea.querySelector('.mic-button');
+
+            this.initializeEventListeners();
+            this.initializeSpeechRecognition();
+        }
+
+        initializeEventListeners() {
+            this.socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                const messageContainer = document.createElement("div");
+                const isCurrentUser = data.user === "{{ request.user.username }}";
+                messageContainer.className = `message-container ${isCurrentUser ? 'sent' : 'received'}`;
+
+                messageContainer.innerHTML = `
+                    <div class="username">${data.user}</div>
+                    <div class="message-bubble">${data.message}</div>
+                `;
+
+                this.chatLog.appendChild(messageContainer);
+                this.chatLog.scrollTop = this.chatLog.scrollHeight;
+            };
+
+            this.socket.onclose = () => {
+                console.error(`Chat socket closed for room ${this.roomName} (ID: ${this.roomId})`);
+            };
+
+            this.sendButton.addEventListener("click", () => this.sendMessage());
+            this.messageInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+
+        initializeSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = () => {
+                    this.micButton.classList.add('recording');
+                };
+
+                recognition.onend = () => {
+                    this.micButton.classList.remove('recording');
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    this.messageInput.value = transcript;
+                };
+
+                this.micButton.addEventListener("click", () => {
+                    recognition.start();
+                });
+            } else {
+                this.micButton.style.display = 'none';
+            }
+        }
+
+        sendMessage() {
+            const message = this.messageInput.value.trim();
+            if (message) {
+                this.socket.send(JSON.stringify({
+                    message: message,
+                    room_id: this.roomId  // Changed to send room_id instead of room name
+                }));
+                this.messageInput.value = "";
+            }
+        }
+
+        activate() {
+            this.chatArea.classList.add('active');
+        }
+
+        deactivate() {
+            this.chatArea.classList.remove('active');
+        }
+    }
+
+    // Initialize chat rooms
+    const chatRooms = {};
+    document.querySelectorAll('.room-item').forEach(roomElement => {
+        const roomName = roomElement.dataset.room;
+        const roomId = roomElement.dataset.roomId;
+        chatRooms[roomId] = new ChatRoom(roomName, roomId);
+
+        roomElement.addEventListener('click', () => {
+            // Update active states
+            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+            roomElement.classList.add('active');
+
+            // Switch chat room display
+            Object.values(chatRooms).forEach(room => room.deactivate());
+            chatRooms[roomId].activate();
+        });
+    });
+
+    // Activate first room by default
+    const firstRoomElement = document.querySelector('.room-item');
+    if (firstRoomElement) {
+        const firstRoomId = firstRoomElement.dataset.roomId;
+        firstRoomElement.classList.add('active');
+        chatRooms[firstRoomId].activate();
+    }
+    // Group creation functionality
+document.getElementById('create-group-btn').addEventListener('click', async () => {
+    const groupName = document.getElementById('new-group-name').value.trim();
+
+    if (!groupName) {
+        alert('Please enter a group name');
+        return;
+    }
+
+    try {
+        const response = await fetch('{% url 'create_group' %}', {  // Adjust this endpoint to match your actual API endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Django CSRF token
+            },
+            body: JSON.stringify({
+                group: groupName
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Refresh the page after successful creation
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to create group');
+        }
+    } catch (error) {
+        console.error('Error creating group:', error);
+        alert('Failed to create group. Please try again.');
+    }
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+</body>
+</html>

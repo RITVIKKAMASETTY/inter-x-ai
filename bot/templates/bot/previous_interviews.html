@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Previous Interviews</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212; /* Dark theme background */
+            color: #f5f5f5; /* Light text for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #00c853; /* Green accent for header */
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background-color: #1e1e1e; /* Slightly lighter background for list items */
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        li strong {
+            color: #00c853; /* Green for labels */
+        }
+        li a {
+            display: inline-block;
+            margin-top: 10px;
+            text-decoration: none;
+            color: #2196f3; /* Blue for links */
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        li a:hover {
+            color: #82b1ff; /* Lighter blue on hover */
+        }
+        p {
+            text-align: center;
+            font-size: 1.2em;
+            color: #b0bec5; /* Muted color for empty state text */
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Previous Interviews</h1>
+
+        {% if conversations %}
+            <ul>
+                {% for convo in conversations %}
+                    <li>
+                        <strong>Post:</strong> {{ convo.post.post }} <br>
+                        <strong>Date:</strong> {{ convo.time|date:"D, d M Y H:i" }} <br>
+                        <a href="{% url 'view_conversation' convoid=convo.id %}">View Conversation</a>
+                        <a href="{% url 'summary' convoid=convo.id %}">Generate the summary</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No previous interviews found.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
