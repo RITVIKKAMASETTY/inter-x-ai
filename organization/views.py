@@ -877,3 +877,181 @@ def apply_interview(request, interview_id):
             messages.error(request, f'An error occurred: {str(e)}')
             return redirect('available_interviews')
     return redirect('available_interviews')
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from io import BytesIO
+import json
+from django.core.files.base import ContentFile
+
+def create_standardized_pdf(resume_data):
+    """
+    Create a standardized PDF resume from the template
+    
+    Parameters:
+    - resume_data: dict containing the standardized resume data
+    
+    Returns:
+    - BytesIO object containing the PDF
+    """
+    # Create BytesIO buffer to receive PDF data
+    buffer = BytesIO()
+    
+    # Create the PDF object using ReportLab
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=72,
+        leftMargin=72,
+        topMargin=72,
+        bottomMargin=72
+    )
+    
+    # Container for PDF elements
+    elements = []
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=30,
+        alignment=1  # Center alignment
+    )
+    section_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontSize=14,
+        spaceBefore=20,
+        spaceAfter=12,
+        textColor=colors.HexColor('#2C3E50')
+    )
+    normal_style = styles['Normal']
+    
+    # Personal Information Section
+    personal_info = resume_data.get('personal_info', {})
+    elements.append(Paragraph(personal_info.get('name', 'N/A'), title_style))
+    
+    contact_info = [
+        personal_info.get('email', 'N/A'),
+        personal_info.get('phone', 'N/A')
+    ]
+    elements.append(Paragraph(' | '.join(contact_info), normal_style))
+    elements.append(Spacer(1, 20))
+    
+    # Education Section
+    elements.append(Paragraph('EDUCATION', section_style))
+    education = resume_data.get('education', [])
+    for edu in education:
+        edu_text = f"{edu.get('institution', 'N/A')} ({edu.get('year', 'N/A')})"
+        elements.append(Paragraph(edu_text, normal_style))
+        elements.append(Spacer(1, 6))
+    
+    # Experience Section
+    elements.append(Paragraph('PROFESSIONAL EXPERIENCE', section_style))
+    experience = resume_data.get('experience', [])
+    for exp in experience:
+        exp_text = f"{exp.get('role', 'N/A')} ({exp.get('year', 'N/A')})"
+        elements.append(Paragraph(exp_text, normal_style))
+        elements.append(Spacer(1, 6))
+    
+    # Skills Section
+    elements.append(Paragraph('TECHNICAL SKILLS', section_style))
+    skills = resume_data.get('skills', [])
+    if skills:
+        skill_text = ', '.join(skills)
+        elements.append(Paragraph(skill_text, normal_style))
+    
+    # Projects Section
+    elements.append(Paragraph('PROJECTS', section_style))
+    projects = resume_data.get('projects', [])
+    for project in projects:
+        project_text = project.get('name', 'N/A')
+        elements.append(Paragraph(project_text, normal_style))
+        elements.append(Spacer(1, 6))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def apply_interview(request, interview_id):
+    if request.method == 'POST':
+        try:
+            # Get interview
+            interview = Custominterviews.objects.get(id=interview_id)
+            
+            # Validation checks
+            if interview.submissionDeadline < timezone.now():
+                messages.error(request, 'Application deadline has passed.')
+                return redirect('available_interviews')
+                
+            if Application.objects.filter(user=request.user, interview_id=interview_id).exists():
+                messages.error(request, 'You have already applied for this interview.')
+                return redirect('available_interviews')
+            
+            # Handle resume upload
+            resume = request.FILES.get('resume')
+            if not resume:
+                messages.error(request, 'Please upload your resume.')
+                return redirect('available_interviews')
+            
+            # Extract and standardize resume
+            try:
+                extracted_resume_text = extract_text_from_file(resume)
+                standardized_data = standardize_resume(extracted_resume_text)
+                
+                # Generate standardized PDF
+                pdf_buffer = create_standardized_pdf(standardized_data)
+                standardized_pdf = ContentFile(pdf_buffer.getvalue())
+                
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('available_interviews')
+            
+            # Get user profile
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+            except UserProfile.DoesNotExist:
+                messages.error(request, 'Please complete your profile first.')
+                return redirect('profile_setup')
+            
+            # Fetch profile stats
+            leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
+            github_stats = fetch_github_stats(user_profile.github)
+            
+            # Calculate profile score with weightage
+            profile_score = calculate_profile_score(
+                leetcode_stats,
+                github_stats,
+                interview.post,
+                interview.desc,
+                interview.DSA or 50,
+                interview.Dev or 50
+            )
+            
+            # Create application
+            application = Application.objects.create(
+                user=request.user,
+                interview=interview,
+                resume=resume,
+                standardized_resume=standardized_pdf,  # Store the standardized PDF
+                extracted_resume=extracted_resume_text,
+                score=profile_score,
+            )
+            
+            # Set the filename for the standardized resume
+            application.standardized_resume.name = f'standardized_resume_{application.id}.pdf'
+            application.save()
+            
+            messages.success(request, 'Application submitted successfully!')
+            return redirect('application_status', application_id=application.id)
+            
+        except Exception as e:
+            messages.error(request, f'An error occurred: {str(e)}')
+            return redirect('available_interviews')
+            
+    return redirect('available_interviews')
