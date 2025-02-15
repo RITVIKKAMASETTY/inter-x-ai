@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .malpractice-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ff4444;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .video-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #videoElement {
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+
+        .spline-viewer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background: #007bff;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            margin-left: 20%;
+        }
+
+        .message.ai {
+            background: #f5f5f5;
+            margin-right: 20%;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            border-top: 1px solid #ccc;
+            display: flex;
+            gap: 10px;
+        }
+
+        #response-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .send-button {
+            background: #007bff;
+            color: white;
+        }
+
+        .end-interview-button {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="malpractice-warning" id="malpractice-warning">
+        Warning: Malpractice detected. This incident has been recorded.
+    </div>
+
+    <div class="main-container">
+        <div class="video-container">
+            <video id="videoElement" autoplay playsinline></video>
+            <div class="spline-viewer-container">
+                <spline-viewer url="https://prod.spline.design/oYiuUSnOHJTzdcPg/scene.splinecode"></spline-viewer>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">AI Interview</div>
+            <div class="chat-messages" id="chat-messages">
+                {% for question in questions %}
+                <div class="message {{ question.user }}">
+                    <div class="content">{{ question.question }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="chat-footer">
+                <input id="response-input" type="text" placeholder="Type your response...">
+                <button class="send-button" id="send-button">Send</button>
+                <button class="end-interview-button" id="end-interview-button">End Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+    <script>
+        // Initialize important variables
+        const applicationId = {{ applicationId|safe }};
+        let isCheated = {{ is_cheated|yesno:"true,false" }};
+        let isInterviewComplete = false;
+        let isEndInterviewClicked = false;
+
+        // Get DOM elements
+        const video = document.getElementById('videoElement');
+        const malpracticeWarning = document.getElementById('malpractice-warning');
+        const chatMessages = document.getElementById('chat-messages');
+        const responseInput = document.getElementById('response-input');
+        const sendButton = document.getElementById('send-button');
+        const endInterviewButton = document.getElementById('end-interview-button');
+        let stream = null;
+
+        class CheatingDetector {
+            constructor(applicationId) {
+                this.applicationId = applicationId;
+                this.hasCheated = false;
+                this.initializeDetection();
+            }
+
+            initializeDetection() {
+                window.addEventListener('beforeunload', () => {
+                    if (!isEndInterviewClicked) {
+                        this.handleCheating('Page refresh detected');
+                    }
+                });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && !isEndInterviewClicked) {
+                        this.handleCheating('Tab switch detected');
+                        location.reload();
+                    }
+                });
+
+                window.addEventListener('blur', () => {
+                    if (!isEndInterviewClicked) {
+                        this.handleCheating('Window blur detected');
+                    }
+                });
+            }
+
+            async handleCheating(reason) {
+                if (this.hasCheated) return;
+
+                this.hasCheated = true;
+                isCheated = true;
+                malpracticeWarning.style.display = 'block';
+                console.log('Malpractice detected:', reason);
+
+                try {
+                    const response = await fetch('{% url "cheated" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            id: this.applicationId,
+                            reason: reason
+                        })
+                    });
+
+                    if (!response.ok) {
+                        console.error('Failed to record cheating incident');
+                    }
+                } catch (error) {
+                    console.error('Error recording cheating:', error);
+                }
+            }
+        }
+
+        // Face detection functions
+        async function loadModels() {
+            try {
+                console.log('Loading face detection models...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
+                console.log('Face detection models loaded successfully');
+            } catch (err) {
+                console.error('Failed to load face detection models:', err);
+            }
+        }
+
+        function isLookingTowardsCamera(landmarks) {
+            const nose = landmarks.getNose();
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            const eyeCenterX = (leftEye[0].x + rightEye[3].x) / 2;
+            const noseCenterX = nose[0].x;
+
+            const threshold = 10;
+            return Math.abs(eyeCenterX - noseCenterX) < threshold;
+        }
+
+        async function processVideo() {
+            if (!video.srcObject || isCheated) return;
+
+            try {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks();
+
+                if (detections.length === 2) {
+                    console.log('Multiple faces detected');
+                    cheatingDetector.handleCheating('Multiple faces detected');
+                    return;
+                }
+
+                if (detections.length === 1) {
+                    const landmarks = detections[0].landmarks;
+                    if (!isLookingTowardsCamera(landmarks)) {
+                        console.log('User not looking at camera');
+                        cheatingDetector.handleCheating('User not looking at camera');
+                        return;
+                    }
+                }
+
+                if (!isCheated) {
+                    requestAnimationFrame(processVideo);
+                }
+            } catch (err) {
+                console.error('Error in face detection:', err);
+                if (!isCheated) {
+                    requestAnimationFrame(processVideo);
+                }
+            }
+        }
+
+        // Speech Recognition Setup
+        const micButton = document.createElement('span');
+        micButton.textContent = '🎤';
+        micButton.style.cursor = 'pointer';
+        document.querySelector('.chat-footer').appendChild(micButton);
+
+        micButton.addEventListener('click', () => {
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.onresult = event => {
+                responseInput.value = event.results[0][0].transcript;
+            };
+            recognition.start();
+        });
+
+        // Text-to-Speech function
+        function speakMessage(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            speechSynthesis.speak(utterance);
+        }
+
+        // Chat functionality
+        async function sendMessage() {
+            if (isInterviewComplete || isCheated) return;
+
+            const messageText = responseInput.value.trim();
+            if (!messageText) return;
+
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user';
+            userMessageDiv.innerHTML = `<div class="content">${messageText}</div>`;
+            chatMessages.appendChild(userMessageDiv);
+
+            responseInput.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        response: messageText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.reply) {
+                    const aiReplyDiv = document.createElement('div');
+                    aiReplyDiv.className = 'message ai';
+                    aiReplyDiv.innerHTML = `<div class="content">${data.reply}</div>`;
+                    chatMessages.appendChild(aiReplyDiv);
+                    speakMessage(data.reply);
+                }
+
+                if (data.next_question) {
+                    if (data.next_question.includes("INTERVIEW_COMPLETE")) {
+                        isInterviewComplete = true;
+                        window.location.href = '{% url "home" %}';
+                        return;
+                    }
+
+                    const aiQuestionDiv = document.createElement('div');
+                    aiQuestionDiv.className = 'message ai';
+                    aiQuestionDiv.innerHTML = `<div class="content">${data.next_question}</div>`;
+                    chatMessages.appendChild(aiQuestionDiv);
+                    speakMessage(data.next_question);
+                }
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        // Event Listeners
+        sendButton.addEventListener('click', sendMessage);
+        responseInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        endInterviewButton.addEventListener('click', async () => {
+            if (isInterviewComplete) return;
+
+            isEndInterviewClicked = true;
+            isInterviewComplete = true;
+
+            try {
+                const response = await fetch('{% url "evaluate" applicationId %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = '{% url "home" %}';
+                } else {
+                    console.error('Failed to end interview');
+                }
+            } catch (error) {
+                console.error('Error ending interview:', error);
+            }
+        });
+
+        // Initialize
+        async function init() {
+            const cheatingDetector = new CheatingDetector(applicationId);
+            if (isCheated) {
+                cheatingDetector.hasCheated = true;
+                window.location.href = '{% url "home" %}';
+                return;
+            }
+
+            await loadModels();
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640,
+                        height: 480,
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                video.addEventListener('play', processVideo);
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                cheatingDetector.handleCheating('Camera access denied');
+            }
+        }
+
+        init();
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    </script>
+</body>
+</html>

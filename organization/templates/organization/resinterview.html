@@ -1,0 +1,466 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat & Interview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <script src="https://docs.opencv.org/4.5.4/opencv.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.48/build/spline-viewer.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #F8F9FA;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .main-container {
+            width: 95%;
+            max-width: 1400px;
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 350px;
+            background-color: #007BFF;
+            border-radius: 12px;
+        }
+
+        .spline-viewer-container {
+            flex: 1;
+            height: 300px;
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            flex: 1;
+            max-width: 45%;
+            background-color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background-color: #007BFF;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header-title {
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+
+        .chat-header-info {
+            font-size: 0.9em;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            max-height: 550px;
+            overflow-y: auto;
+            flex: 1;
+            background-color: #F8F9FA;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user .content {
+            background-color: #007BFF;
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            align-self: flex-end;
+            max-width: 80%;
+        }
+
+        .message.ai .content {
+            background-color: #0056b3;
+            color: white;
+            border-radius: 12px;
+            padding: 12px;
+            align-self: flex-start;
+            max-width: 80%;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            background-color: white;
+        }
+
+        #response-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 24px;
+            border: 1px solid #007BFF;
+            outline: none;
+        }
+
+        .send-button {
+            padding: 12px 18px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+        }
+
+        .end-interview-button {
+            padding: 12px 18px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .mic-button {
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .malpractice-warning {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #dc3545;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="malpractice-warning" id="malpractice-warning">
+        Warning: Malpractice detected. This incident has been recorded.
+    </div>
+    
+    <div class="main-container">
+        <div class="video-container">
+            <video id="videoElement" autoplay playsinline></video>
+            <div class="spline-viewer-container">
+                <spline-viewer url="https://prod.spline.design/oYiuUSnOHJTzdcPg/scene.splinecode"></spline-viewer>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="chat-header-title">AI Interview</div>
+                <div class="chat-header-info">
+                    <span id="current-phase">Phase 1</span> - 
+                    Question <span id="question-number">1</span>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                {% for question in questions %}
+                    <div class="message {{ question.user }}">
+                        <div class="content">{{ question.question }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="chat-footer">
+                <input id="response-input" type="text" placeholder="Type your response...">
+                <button class="mic-button" id="mic-button">🎤</button>
+                <button class="send-button" id="send-button">Send</button>
+                <button class="end-interview-button" id="end-interview-button">End Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Initialize important variables
+            const applicationId = {{ applicationId|safe }};
+            const interviewId = '{{ interview.id }}';
+            const isCheated = {{ is_cheated|yesno:"true,false" }};
+            let isInterviewComplete = false;
+            let isEndInterviewClicked = false;
+            let lastAnswer = '';
+
+            // Function to get CSRF token
+            function getCsrfToken() {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') {
+                        return value;
+                    }
+                }
+                return '{{ csrf_token }}';
+            }
+
+            // Redirect if cheating detected
+            if (isCheated) {
+                window.location.href = '{% url "home" %}';
+            }
+
+            // Initialize video stream
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    document.getElementById("videoElement").srcObject = stream;
+                })
+                .catch(err => console.error("Error accessing camera:", err));
+
+            // Cheating detection class
+            class CheatingDetector {
+                constructor(applicationId) {
+                    this.applicationId = applicationId;
+                    this.hasCheated = false;
+                    this.initializeDetection();
+                }
+
+                initializeDetection() {
+                    window.addEventListener('beforeunload', () => {
+                        if (!isEndInterviewClicked) {
+                            this.handleCheating();
+                        }
+                    });
+
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.hidden && !isEndInterviewClicked) {
+                            location.reload();
+                        }
+                    });
+
+                    window.addEventListener('blur', () => {
+                        if (!isEndInterviewClicked) {
+                            this.handleCheating();
+                        }
+                    });
+                }
+
+                async handleCheating() {
+                    if (this.hasCheated) return;
+
+                    this.hasCheated = true;
+                    const warningDiv = document.getElementById('malpractice-warning');
+                    warningDiv.style.display = 'block';
+
+                    try {
+                        const response = await fetch('{% url "cheated" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCsrfToken()
+                            },
+                            body: JSON.stringify({
+                                id: this.applicationId
+                            })
+                        });
+
+                        if (!response.ok) {
+                            console.error('Failed to record cheating incident');
+                        }
+                    } catch (error) {
+                        console.error('Error recording cheating:', error);
+                    }
+                }
+            }
+
+            // Speech recognition setup
+            const micButton = document.getElementById('mic-button');
+            micButton.addEventListener('click', () => {
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = "en-US";
+                recognition.onresult = event => {
+                    document.getElementById('response-input').value = event.results[0][0].transcript;
+                };
+                recognition.start();
+            });
+
+            // Text-to-speech function
+            function speakMessage(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                speechSynthesis.speak(utterance);
+            }
+
+            // Updated getNextQuestion function that supports both approaches
+            function getNextQuestion(previousAnswer = '') {
+                // First try the legacy approach with form data
+                $.ajax({
+                    url: '{% url 'get_next_question' %}',
+                    method: 'POST',
+                    data: {
+                        'interview_id': interviewId,
+                        'answer': previousAnswer,
+                        'csrfmiddlewaretoken': getCsrfToken()
+                    },
+                    success: function(response) {
+                        handleQuestionResponse(response);
+                    },
+                    error: function(xhr, status, error) {
+                        // If the legacy approach fails, try the new JSON approach
+                        fetch('{% url 'get_next_question' %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCsrfToken()
+                            },
+                            body: JSON.stringify({
+                                application_id: applicationId,
+                                previous_answer: previousAnswer
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.next_question) {
+                                appendMessage('ai', data.next_question);
+                                speakMessage(data.next_question);
+                            } else if (data.status === 'interview_complete') {
+                                generateVirtualResume();
+                            } else if (data.error) {
+                                console.error('Error:', data.error);
+                                appendMessage('system', 'An error occurred. Please try again.');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Both approaches failed:', err);
+                            appendMessage('system', 'An error occurred. Please try again.');
+                        });
+                    }
+                });
+            }
+
+            function handleQuestionResponse(response) {
+                if (response.status === 'completed') {
+                    generateVirtualResume();
+                    return;
+                }
+
+                $('#current-phase').text(response.phase);
+                $('#question-number').text(response.question_number);
+                
+                appendMessage('ai', response.question);
+                speakMessage(response.question);
+            }
+
+            async function sendMessage() {
+                if (isInterviewComplete) return;
+
+                const messageText = $('#response-input').val().trim();
+                if (!messageText) return;
+
+                appendMessage('user', messageText);
+                $('#response-input').val('');
+                lastAnswer = messageText;
+
+                getNextQuestion(messageText);
+            }
+
+            function appendMessage(sender, content) {
+                const messageDiv = $('<div>')
+                    .addClass('message')
+                    .addClass(sender);
+                const messageContent = $('<div>')
+                    .addClass('content')
+                    .text(content);
+                messageDiv.append(messageContent);
+                $('#chat-messages').append(messageDiv);
+                
+                $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight);
+            }
+
+            async function generateVirtualResume() {
+                try {
+                    const response = await fetch(`/org/interview/generate-virtual-resume/${applicationId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCsrfToken()
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        window.location.href = data.redirect_url;
+                    }
+                } catch (error) {
+                    console.error('Error generating virtual resume:', error);
+                }
+            }
+
+            // Event listeners
+            $('#send-button').click(sendMessage);
+            $('#response-input').keypress((e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            $('#end-interview-button').click(async () => {
+                if (isInterviewComplete) return;
+                
+                isEndInterviewClicked = true;
+                isInterviewComplete = true;
+                generateVirtualResume();
+            });
+
+            // Initialize
+            const cheatingDetector = new CheatingDetector(applicationId);
+            if (isCheated) {
+                cheatingDetector.hasCheated = true;
+            }
+
+            // Get first question
+            getNextQuestion();
+        });
+    </script>
+</body>
+</html>
