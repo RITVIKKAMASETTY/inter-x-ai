@@ -23,7 +23,6 @@ class Custominterviews(models.Model):
     endTime = models.DateTimeField()
     DSA = models.IntegerField(blank=True,null=True)
     Dev = models.IntegerField(blank=True,null=True)
-    standardized_resume = models.FileField(upload_to='standardized_resumes/')
 
     def __str__(self):
         return f'{self.org.orgname}-{self.post}'
@@ -36,6 +35,7 @@ class Application(models.Model):
     isCheated = models.BooleanField(default=False)
     extratedResume = models.TextField(blank=True,null=True)
     virtualResume = models.TextField(blank=True,null=True)
+    standardized_resume = models.FileField(upload_to='std_resumes/',blank=True,null=True)
     score = models.IntegerField(default=0)
     def __str__(self):
         return f'{self.user.username}-{self.interview.org.orgname}'

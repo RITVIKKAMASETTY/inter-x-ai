@@ -732,7 +732,7 @@ def fetch_github_stats(username):
 
 def calculate_profile_score(leetcode_stats, github_stats, job_role, job_description, dsa_weight, dev_weight):
     """
-    Calculate overall profile score with DSA and Dev weightage
+    Calculate overall profile score with DSA and Dev weightage, using stricter criteria
     
     Parameters:
     - leetcode_stats: dict with LeetCode statistics
@@ -745,35 +745,70 @@ def calculate_profile_score(leetcode_stats, github_stats, job_role, job_descript
     if dsa_weight + dev_weight != 100:
         raise ValueError("DSA and Dev weights must sum to 100")
 
-    # DSA Score Calculation (based on LeetCode)
+    # DSA Score Calculation (based on LeetCode) - stricter scaling
     dsa_score = 0
     if leetcode_stats:
         problems_solved = leetcode_stats.get('total_solved', 0)
-        # Scale problems solved to 100 points max
-        dsa_score = min(problems_solved / 5, 100)
+        # Scale problems solved with stricter requirement (1500 for max)
+        dsa_score = min(problems_solved / 15, 100)
 
-    # Dev Score Calculation (based on GitHub)
+    # Dev Score Calculation (based on GitHub) - stricter and more nuanced
     dev_score = 0
     if github_stats:
         repos = github_stats.get('public_repos', 0)
         contributions = github_stats.get('contributions', 0)
         languages = len(github_stats.get('languages', []))
+        followers = github_stats.get('followers', 0)
+        following = max(github_stats.get('following', 1), 1)  # Prevent division by zero
         
-        # Calculate components of dev score
-        repo_score = min(repos * 10, 40)  # Max 40 points for repositories
-        contrib_score = min(contributions / 2, 30)  # Max 30 points for contributions
-        lang_score = min(languages * 10, 30)  # Max 30 points for language diversity
+        # Calculate components with stricter scales
+        repo_score = min(repos * 5, 35)  # Max 35 points, stricter scaling
+        contrib_score = min(contributions / 5, 25)  # Max 25 points, needs more contributions
+        lang_score = min(languages * 5, 20)  # Max 20 points, harder to max out
         
-        dev_score = repo_score + contrib_score + lang_score
+        # Quality factor based on follower ratio (rewards popular accounts)
+        follower_ratio = followers / following
+        quality_factor = min(follower_ratio, 1)  # Cap at 1
+        
+        # Calculate initial dev score with quality consideration
+        dev_score = (repo_score + contrib_score + lang_score) * (0.5 + 0.5 * quality_factor)
+        
+        # Adjust for job role relevance if information available
+        if job_role and github_stats.get('languages'):
+            # Simple heuristic: check if any languages match keywords in job role/description
+            relevant_keywords = {
+                'frontend': ['javascript', 'typescript', 'html', 'css', 'react', 'vue', 'angular'],
+                'backend': ['python', 'java', 'c#', 'go', 'ruby', 'node', 'php'],
+                'fullstack': ['javascript', 'typescript', 'python', 'java', 'ruby'],
+                'mobile': ['swift', 'kotlin', 'java', 'objective-c', 'flutter', 'react native'],
+                'data': ['python', 'r', 'sql', 'scala', 'julia']
+            }
+            
+            role_keywords = []
+            for role, keywords in relevant_keywords.items():
+                if role.lower() in job_role.lower() or role.lower() in job_description.lower():
+                    role_keywords.extend(keywords)
+            
+            if role_keywords:
+                languages_list = [lang.lower() for lang in github_stats.get('languages', [])]
+                matches = sum(1 for lang in languages_list if lang in role_keywords)
+                relevance_factor = min(0.5 + (matches * 0.1), 1.0)  # 0.5 base + 0.1 per match, max 1.0
+                dev_score *= relevance_factor
 
     # Apply weightage
     weighted_score = (
         (dsa_score * (dsa_weight / 100)) +
         (dev_score * (dev_weight / 100))
     )
-
-    return min(round(weighted_score, 2), 100)
-
+    
+    # Apply a curve to make high scores harder to achieve
+    if weighted_score > 60:
+        weighted_score = 60 + (weighted_score - 60) * 0.5  # Reduce growth rate above 60
+    
+    # Add final check to ensure scores are stricter overall
+    final_score = min(round(weighted_score * 0.9, 2), 100)  # 10% overall reduction
+    
+    return final_score
 
 import PyPDF2
 from docx import Document
@@ -797,29 +832,153 @@ def extract_text_from_file(file):
         return text
     else:
         raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+import re
+import uuid
 from io import BytesIO
-import json
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.utils import timezone
 from django.core.files.base import ContentFile
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import requests
+import json
+
+
+
+# Load environment variables
+def extract_resume_with_groq(extracted_text):
+    """
+    Use Groq API to extract structured information from resume text
+    """
+    api_key = "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"
+    if not api_key:
+        raise ValueError("GROQ API key not found in environment variables")
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    prompt = f"""
+    Extract the following information from this resume text and return it as a JSON object:
+    
+    1. Personal information: name, email, phone, LinkedIn profile if available
+    2. Education: list of schools/universities with degree, field of study, and years
+    3. Work experience: list of positions with company name, role, years, and key responsibilities
+    4. Skills: list of technical skills, programming languages, tools, etc.
+    5. Projects: list of projects with name, description, and technologies used
+    
+    Here's the resume text:
+    {extracted_text}
+    
+    Also, calculate a resume score (0-100) based on:
+    - Relevance of skills to software development/engineering (0-25)
+    - Years of experience (0-25)
+    - Education level (0-15)
+    - Project complexity and relevance (0-25)
+    - Overall presentation and completeness (0-10)
+    
+    Return ONLY a valid JSON object with these keys: personal_info, education, experience, skills, projects, resume_score. 
+    Do not include any explanation text before or after the JSON.
+    """
+    
+    data = {
+        "model": "llama3-70b-8192",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"}  # Request JSON response format
+    }
+    
+    try:
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                               headers=headers, 
+                               json=data)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract the JSON content from the response
+        content = result["choices"][0]["message"]["content"]
+        
+        # Clean and parse the JSON
+        try:
+            # First try direct parsing
+            resume_data = json.loads(content)
+        except json.JSONDecodeError:
+            # Try to extract JSON if there's markdown or other text
+            json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1).strip()
+                resume_data = json.loads(json_str)
+            else:
+                # Last resort: try to find anything that looks like JSON
+                potential_json = re.search(r'\{.*\}', content, re.DOTALL)
+                if potential_json:
+                    json_str = potential_json.group(0)
+                    resume_data = json.loads(json_str)
+                else:
+                    # If all else fails, create a minimal valid structure
+                    resume_data = {
+                        "personal_info": {"name": "Could not parse name"},
+                        "education": [],
+                        "experience": [],
+                        "skills": [],
+                        "projects": [],
+                        "resume_score": 0
+                    }
+        
+        # Validate the required keys exist
+        required_keys = ["personal_info", "education", "experience", "skills", "projects", "resume_score"]
+        for key in required_keys:
+            if key not in resume_data:
+                resume_data[key] = [] if key != "personal_info" and key != "resume_score" else ({} if key == "personal_info" else 0)
+        
+        return resume_data
+        
+    except requests.exceptions.RequestException as e:
+        # Log the error and return a basic structure
+        print(f"Error calling Groq API: {str(e)}")
+        return {
+            "personal_info": {"name": "API Error - Could not process resume"},
+            "education": [],
+            "experience": [],
+            "skills": [],
+            "projects": [],
+            "resume_score": 0
+        }
+    except json.JSONDecodeError as e:
+        # Log the error with the received content for debugging
+        print(f"Error parsing Groq API response: {str(e)}")
+        print(f"Received content: {content}")
+        return {
+            "personal_info": {"name": "JSON Error - Could not process resume"},
+            "education": [],
+            "experience": [],
+            "skills": [],
+            "projects": [],
+            "resume_score": 0
+        }
+    except Exception as e:
+        # Catch any other unexpected errors
+        print(f"Unexpected error processing resume: {str(e)}")
+        return {
+            "personal_info": {"name": "Error - Could not process resume"},
+            "education": [],
+            "experience": [],
+            "skills": [],
+            "projects": [],
+            "resume_score": 0
+        }
 
 def create_standardized_pdf(resume_data):
     """
-    Create a standardized PDF resume from the template
-    
-    Parameters:
-    - resume_data: dict containing the standardized resume data
-    
-    Returns:
-    - BytesIO object containing the PDF
+    Create a standardized PDF resume with improved formatting and content display
     """
-    # Create BytesIO buffer to receive PDF data
     buffer = BytesIO()
     
-    # Create the PDF object using ReportLab
     doc = SimpleDocTemplate(
         buffer,
         pagesize=letter,
@@ -829,74 +988,203 @@ def create_standardized_pdf(resume_data):
         bottomMargin=72
     )
     
-    # Container for PDF elements
     elements = []
-    
-    # Styles
     styles = getSampleStyleSheet()
+    
+    # Enhanced style definitions
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
         fontSize=16,
-        spaceAfter=30,
-        alignment=1  # Center alignment
+        spaceAfter=10,
+        alignment=1,
+        textColor=colors.HexColor('#2C3E50')
     )
+    
     section_style = ParagraphStyle(
         'SectionHeader',
         parent=styles['Heading2'],
         fontSize=14,
-        spaceBefore=20,
-        spaceAfter=12,
+        spaceBefore=16,
+        spaceAfter=10,
         textColor=colors.HexColor('#2C3E50')
     )
-    normal_style = styles['Normal']
     
-    # Personal Information Section
+    subsection_style = ParagraphStyle(
+        'SubSection',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.HexColor('#34495E'),
+        fontName='Helvetica-Bold'
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#2C3E50'),
+        leading=14
+    )
+    
+    score_style = ParagraphStyle(
+        'ScoreStyle',
+        parent=styles['Normal'],
+        fontSize=13,
+        textColor=colors.HexColor('#2980B9'),
+        fontName='Helvetica-Bold',
+        alignment=1,
+        spaceBefore=10,
+        spaceAfter=10
+    )
+    
+    # Resume Score
+    if 'resume_score' in resume_data:
+        score = resume_data['resume_score']
+        # Handle different score formats (string or number)
+        if isinstance(score, str):
+            try:
+                score = float(score)
+            except ValueError:
+                score = 0
+        elements.append(Paragraph(f"Resume Score: {score}/100", score_style))
+    
+    # Personal Information
     personal_info = resume_data.get('personal_info', {})
-    elements.append(Paragraph(personal_info.get('name', 'N/A'), title_style))
+    if not isinstance(personal_info, dict):
+        personal_info = {"name": str(personal_info)}
     
-    contact_info = [
-        personal_info.get('email', 'N/A'),
-        personal_info.get('phone', 'N/A')
-    ]
-    elements.append(Paragraph(' | '.join(contact_info), normal_style))
+    name = personal_info.get('name', 'N/A')
+    elements.append(Paragraph(str(name), title_style))
+    
+    contact_info = []
+    if 'email' in personal_info:
+        contact_info.append(str(personal_info['email']))
+    if 'phone' in personal_info:
+        contact_info.append(str(personal_info['phone']))
+    if 'linkedin' in personal_info:
+        contact_info.append(str(personal_info['linkedin']))
+    if contact_info:
+        elements.append(Paragraph(' | '.join(contact_info), normal_style))
     elements.append(Spacer(1, 20))
     
-    # Education Section
-    elements.append(Paragraph('EDUCATION', section_style))
-    education = resume_data.get('education', [])
-    for edu in education:
-        edu_text = f"{edu.get('institution', 'N/A')} ({edu.get('year', 'N/A')})"
-        elements.append(Paragraph(edu_text, normal_style))
-        elements.append(Spacer(1, 6))
+    # Skills Section (Moved to top for quick review)
+    if resume_data.get('skills'):
+        elements.append(Paragraph('TECHNICAL SKILLS', section_style))
+        skills = resume_data['skills']
+        if isinstance(skills, list):
+            skills_text = ', '.join(str(skill) for skill in skills)
+        else:
+            skills_text = str(skills)
+        elements.append(Paragraph(skills_text, normal_style))
+        elements.append(Spacer(1, 12))
     
     # Experience Section
-    elements.append(Paragraph('PROFESSIONAL EXPERIENCE', section_style))
-    experience = resume_data.get('experience', [])
-    for exp in experience:
-        exp_text = f"{exp.get('role', 'N/A')} ({exp.get('year', 'N/A')})"
-        elements.append(Paragraph(exp_text, normal_style))
-        elements.append(Spacer(1, 6))
+    if resume_data.get('experience'):
+        elements.append(Paragraph('PROFESSIONAL EXPERIENCE', section_style))
+        experiences = resume_data['experience']
+        if not isinstance(experiences, list):
+            experiences = [experiences]
+            
+        for exp in experiences:
+            if isinstance(exp, dict):
+                company = exp.get('company', 'N/A')
+                role = exp.get('role', 'N/A')
+                years = exp.get('years', '')
+                description = exp.get('description', '')
+                
+                elements.append(Paragraph(f"{company} - {role} ({years})", subsection_style))
+                if description:
+                    if isinstance(description, list):
+                        for item in description:
+                            elements.append(Paragraph(f"• {item}", normal_style))
+                    else:
+                        elements.append(Paragraph(str(description), normal_style))
+                elements.append(Spacer(1, 8))
+            else:
+                elements.append(Paragraph(str(exp), normal_style))
+                elements.append(Spacer(1, 8))
     
-    # Skills Section
-    elements.append(Paragraph('TECHNICAL SKILLS', section_style))
-    skills = resume_data.get('skills', [])
-    if skills:
-        skill_text = ', '.join(skills)
-        elements.append(Paragraph(skill_text, normal_style))
+    # Education Section
+    if resume_data.get('education'):
+        elements.append(Paragraph('EDUCATION', section_style))
+        educations = resume_data['education']
+        if not isinstance(educations, list):
+            educations = [educations]
+            
+        for edu in educations:
+            if isinstance(edu, dict):
+                institution = edu.get('institution', 'N/A')
+                degree = edu.get('degree', '')
+                field = edu.get('field', '')
+                years = edu.get('years', '')
+                
+                elements.append(Paragraph(f"{institution}", subsection_style))
+                edu_details = []
+                if degree:
+                    edu_details.append(str(degree))
+                if field:
+                    edu_details.append(str(field))
+                if years:
+                    edu_details.append(f"({years})")
+                
+                if edu_details:
+                    elements.append(Paragraph(" - ".join(edu_details), normal_style))
+                elements.append(Spacer(1, 8))
+            else:
+                elements.append(Paragraph(str(edu), normal_style))
+                elements.append(Spacer(1, 8))
     
     # Projects Section
-    elements.append(Paragraph('PROJECTS', section_style))
-    projects = resume_data.get('projects', [])
-    for project in projects:
-        project_text = project.get('name', 'N/A')
-        elements.append(Paragraph(project_text, normal_style))
-        elements.append(Spacer(1, 6))
+    if resume_data.get('projects'):
+        elements.append(Paragraph('PROJECTS', section_style))
+        projects = resume_data['projects']
+        if not isinstance(projects, list):
+            projects = [projects]
+            
+        for project in projects:
+            if isinstance(project, dict):
+                name = project.get('name', 'N/A')
+                description = project.get('description', '')
+                technologies = project.get('technologies', '')
+                
+                elements.append(Paragraph(str(name), subsection_style))
+                if description:
+                    elements.append(Paragraph(str(description), normal_style))
+                if technologies:
+                    if isinstance(technologies, list):
+                        tech_text = f"Technologies: {', '.join(str(tech) for tech in technologies)}"
+                    else:
+                        tech_text = f"Technologies: {technologies}"
+                    elements.append(Paragraph(tech_text, normal_style))
+                elements.append(Spacer(1, 8))
+            else:
+                elements.append(Paragraph(str(project), normal_style))
+                elements.append(Spacer(1, 8))
     
-    # Build PDF
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
+    try:
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        # Handle PDF generation errors
+        print(f"Error generating PDF: {str(e)}")
+        # Create a simple error PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = [
+            Paragraph("Error Generating Resume", title_style),
+            Spacer(1, 20),
+            Paragraph(f"There was an error processing this resume: {str(e)}", normal_style)
+        ]
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer
+
+def generate_unique_filename(instance, filename):
+    """Generate a unique, shortened filename"""
+    ext = filename.split('.')[-1]
+    unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
+    return f"{unique_id}.{ext}"
 
 def apply_interview(request, interview_id):
     if request.method == 'POST':
@@ -919,17 +1207,39 @@ def apply_interview(request, interview_id):
                 messages.error(request, 'Please upload your resume.')
                 return redirect('available_interviews')
             
-            # Extract and standardize resume
+            # Extract resume text
             try:
                 extracted_resume_text = extract_text_from_file(resume)
-                standardized_data = standardize_resume(extracted_resume_text)
+                
+                # Use Groq to extract structured data and calculate score
+                resume_data = extract_resume_with_groq(extracted_resume_text)
                 
                 # Generate standardized PDF
-                pdf_buffer = create_standardized_pdf(standardized_data)
-                standardized_pdf = ContentFile(pdf_buffer.getvalue())
+                pdf_buffer = create_standardized_pdf(resume_data)
+                
+                # Generate unique, short filenames
+                resume_filename = generate_unique_filename(None, resume.name)
+                std_resume_filename = f"std_{resume_filename}"
+                
+                # Create ContentFile with filename
+                standardized_pdf = ContentFile(
+                    pdf_buffer.getvalue(), 
+                    name=f'std_resumes/{std_resume_filename}'
+                )
+                
+                # Get the calculated resume score
+                resume_score = resume_data.get('resume_score', 0)
+                if isinstance(resume_score, str):
+                    try:
+                        resume_score = float(resume_score)
+                    except ValueError:
+                        resume_score = 0
                 
             except ValueError as e:
                 messages.error(request, str(e))
+                return redirect('available_interviews')
+            except Exception as e:
+                messages.error(request, f"Error processing resume: {str(e)}")
                 return redirect('available_interviews')
             
             # Get user profile
@@ -943,161 +1253,44 @@ def apply_interview(request, interview_id):
             leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
             github_stats = fetch_github_stats(user_profile.github)
             
-            # Calculate profile score with weightage
+            # Calculate profile score with weightage - incorporate resume score as well
             profile_score = calculate_profile_score(
                 leetcode_stats,
                 github_stats,
                 interview.post,
                 interview.desc,
                 interview.DSA or 50,
-                interview.Dev or 50
+                interview.Dev or 50,
+                
             )
             
-            # Create application
+            # Save extracted resume data as JSON
+            try:
+                resume_json = json.dumps(resume_data)
+            except Exception as e:
+                # Fallback if JSON serialization fails
+                print(f"Error serializing resume data: {str(e)}")
+                resume_json = json.dumps({
+                    "error": f"Could not serialize resume data: {str(e)}",
+                    "personal_info": {"name": "Error processing resume"}
+                })
+            
+            # Create application with proper file handling
             application = Application.objects.create(
                 user=request.user,
                 interview=interview,
                 resume=resume,
-                standardized_resume=standardized_pdf,  # Store the standardized PDF
-                extracted_resume=extracted_resume_text,
+                standardized_resume=standardized_pdf,
+                extratedResume=resume_json,  
                 score=profile_score,
             )
             
-            # Set the filename for the standardized resume
-            application.standardized_resume.name = f'standardized_resume_{application.id}.pdf'
+            # Set the original resume filename
+            application.resume.name = f'resumes/{resume_filename}'
             application.save()
             
             messages.success(request, 'Application submitted successfully!')
-            return redirect('application_status', application_id=application.id)
-            
-        except Exception as e:
-            messages.error(request, f'An error occurred: {str(e)}')
             return redirect('available_interviews')
-            
-    return redirect('available_interviews')
-def standardize_resume(extracted_text):
-    """
-    Standardize extracted resume text into a common template format
-    """
-    template = {
-        "personal_info": {},
-        "education": [],
-        "experience": [],
-        "skills": [],
-        "projects": [],
-        "certifications": []
-    }
-    
-    try:
-        # Basic text cleaning
-        text = extracted_text.strip()
-        sections = text.split('\n\n')
-        
-        current_section = None
-        for section in sections:
-            section = section.strip().lower()
-            
-            # Identify sections
-            if any(keyword in section for keyword in ['name:', 'email:', 'phone:', 'address:']):
-                current_section = "personal_info"
-                # Extract personal info using regex
-                template["personal_info"].update({
-                    "name": re.search(r'name:?\s*(.*)', section, re.I),
-                    "email": re.search(r'email:?\s*(.*)', section, re.I),
-                    "phone": re.search(r'phone:?\s*(.*)', section, re.I)
-                })
-            
-            elif any(keyword in section for keyword in ['education', 'academic']):
-                current_section = "education"
-                # Extract education details
-                education_entries = re.findall(r'(.*?degree|.*?university|.*?college).*?(\d{4})', section, re.I)
-                template["education"].extend([{"institution": edu[0], "year": edu[1]} for edu in education_entries])
-            
-            elif any(keyword in section for keyword in ['experience', 'work']):
-                current_section = "experience"
-                # Extract work experience
-                experience_entries = re.findall(r'(.*?company|.*?position).*?(\d{4})', section, re.I)
-                template["experience"].extend([{"role": exp[0], "year": exp[1]} for exp in experience_entries])
-            
-            elif any(keyword in section for keyword in ['skill', 'technology', 'language']):
-                current_section = "skills"
-                # Extract skills
-                skills = re.findall(r'[\w\+\#]+(?:\s*[\w\+\#]+)*', section)
-                template["skills"].extend([skill for skill in skills if len(skill) > 2])
-            
-            elif any(keyword in section for keyword in ['project']):
-                current_section = "projects"
-                # Extract projects
-                projects = re.findall(r'(.*?)(?=\n|$)', section)
-                template["projects"].extend([{"name": proj.strip()} for proj in projects if len(proj.strip()) > 0])
-
-    except Exception as e:
-        print(f"Error standardizing resume: {e}")
-        
-    return template
-
-def apply_interview(request, interview_id):
-    if request.method == 'POST':
-        try:
-            # Get interview
-            interview = Custominterviews.objects.get(id=interview_id)
-            
-            # Validation checks
-            if interview.submissionDeadline < timezone.now():
-                messages.error(request, 'Application deadline has passed.')
-                return redirect('available_interviews')
-                
-            if Application.objects.filter(user=request.user, interview_id=interview_id).exists():
-                messages.error(request, 'You have already applied for this interview.')
-                return redirect('available_interviews')
-            
-            # Handle resume upload
-            resume = request.FILES.get('resume')
-            if not resume:
-                messages.error(request, 'Please upload your resume.')
-                return redirect('available_interviews')
-            
-            # Extract and standardize resume
-            try:
-                extracted_resume_text = extract_text_from_file(resume)
-                standardized_resume = standardize_resume(extracted_resume_text)
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect('available_interviews')
-            
-            # Get user profile
-            try:
-                user_profile = UserProfile.objects.get(user=request.user)
-            except UserProfile.DoesNotExist:
-                messages.error(request, 'Please complete your profile first.')
-                return redirect('profile_setup')
-            
-            # Fetch profile stats
-            leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
-            github_stats = fetch_github_stats(user_profile.github)
-            
-            # Calculate profile score with weightage
-            profile_score = calculate_profile_score(
-                leetcode_stats,
-                github_stats,
-                interview.post,
-                interview.desc,
-                interview.DSA or 50,  # Default 50-50 if not specified
-                interview.Dev or 50
-            )
-            
-            # Create application
-            application = Application.objects.create(
-                user=request.user,
-                interview=interview,
-                resume=resume,
-                standardized_resume=json.dumps(standardized_resume),
-                extracted_resume=extracted_resume_text,
-                score=profile_score,
-            )
-            
-            messages.success(request, 'Application submitted successfully!')
-            return redirect('application_status', application_id=application.id)
             
         except Exception as e:
             messages.error(request, f'An error occurred: {str(e)}')
