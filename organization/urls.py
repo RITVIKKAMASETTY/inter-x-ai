@@ -29,6 +29,7 @@ urlpatterns = [
     path('edit',views.editCompanyProfile,name='editcompany'),
     path('compdash/',views.companyDashboard,name='compdash'),
     path('apply/<int:interview_id>/', apply_interview, name='apply_interview'),
+    path('chat-history/<int:application_id>/', views.chat_history_view, name='chat_history'),
 
     # path('video_feed/', views.video_feed, name='video_feed'),
     # path('toggle_camera/', views.toggle_camera, name='toggle_camera'),

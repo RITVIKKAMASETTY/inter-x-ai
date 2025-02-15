@@ -50,9 +50,10 @@
                             <td>{{ application.user.username }}</td>
                             <td>
                                 {% if application.resume %}
-                                <a href="{{ application.resume.url }}" class="btn btn-sm btn-info" target="_blank">
+                                <a href="{{ application.standardized_resume.url }}" class="btn btn-sm btn-info" target="_blank">
                                     View Resume
                                 </a>
+                                
                                 {% else %}
                                 <span class="text-muted">No resume uploaded</span>
                                 {% endif %}

@@ -101,7 +101,10 @@
                 <td>{{ entry.Application.interview.endTime|date:"M d, Y H:i" }}</td>
                 <td>
                     {% if entry.Application.resume %}
-                        <a href="{{ entry.Application.resume.url }}" class="btn-primary" target="_blank">View Resume</a>
+                        <a href="{{ entry.Application.standardized_resume.url }}" class="btn-primary" target="_blank">View Resume</a>
+                        <a href="{% url 'chat_history' entry.Application.id %}" class="btn btn-sm btn-info" target="_blank">
+                            Conversation history
+                        </a>
                     {% else %}
                         <span class="text-muted">No resume uploaded</span>
                     {% endif %}

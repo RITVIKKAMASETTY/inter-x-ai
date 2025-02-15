@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard</title>
+    <title>Organization Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
@@ -34,7 +34,6 @@
             min-height: 100vh;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 280px;
             background: var(--white);
@@ -56,20 +55,6 @@
             font-size: 1.5rem;
             color: var(--text-dark);
             cursor: pointer;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.active {
-                transform: translateX(0);
-            }
-
-            .close-btn {
-                display: block !important;
-            }
         }
 
         .sidebar-header {
@@ -107,7 +92,6 @@
             color: var(--white);
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -115,7 +99,6 @@
             transition: margin-left 0.3s ease;
         }
 
-        /* Profile Section */
         .profile-section {
             background: var(--white);
             border-radius: 1rem;
@@ -155,7 +138,6 @@
             flex: 1;
         }
 
-        /* Mobile Navigation */
         .mobile-nav {
             display: none;
             padding: 1rem;
@@ -174,79 +156,69 @@
             color: var(--primary);
             cursor: pointer;
         }
+
         .section {
-  text-align: center;
-  padding: 20px;
-}
+            text-align: center;
+            padding: 20px;
+        }
 
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  padding: 20px;
-  max-width: 1200px;
-  margin: auto;
-}
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
 
-.card {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
 
-.card h3 {
-  margin-bottom: 10px;
-  color: #2c3e50;
-}
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
 
-.card p {
-  color: #555;
-}
+        .card h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-.section {
-  text-align: center;
-  padding: 20px;
-}
+        .card p {
+            color: #555;
+        }
 
-.stats-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  padding: 20px;
-  max-width: 1200px;
-  margin: auto;
-}
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        a{
+            text-decoration:none;
+        }
 
-/* .stats-container div {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-} */
-
-/* .stats-container h3 {
-  margin-bottom: 10px;
-  color: #2c3e50;
-} */
-
-.stats-container img {
-  width: 100%;
-  max-width: 400px;
-  border-radius: 10px;
-  margin-top: 10px;
-}
-
-        /* Responsive Design */
         @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .close-btn {
+                display: block !important;
+            }
+
             .mobile-nav {
                 display: flex;
             }
@@ -276,27 +248,26 @@
                 width: 100%;
                 margin: 0;
             }
-            .grid-container {
-    grid-template-columns: 1fr;
-  }
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
-        }
 
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="dashboard">
-        <!-- Mobile Navigation -->
+    <div class="dashboard">
         <div class="mobile-nav">
             <div class="hamburger" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
             </div>
-            <h3>Student Dashboard</h3>
+            <h3>Organization Dashboard</h3>
         </div>
 
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="close-btn" onclick="toggleSidebar()">
                 <i class="fas fa-times"></i>
@@ -305,97 +276,80 @@
                 <h3>Welcome to InterXai</h3>
             </div>
             <ul class="nav-links">
-               <a href="{% url 'compdash' %}"><li class="nav-item">
-                   <i class="fas fa-video"></i> Dashboard
-                </li></a>
-              <a href="{% url 'createposting' %}">  <li class="nav-item">
-                    <i class="fas fa-video"></i> Create postings
-                </li></a>
-                 <a href="{% url 'createcustominterview' %}">  <li class="nav-item">
-                    <i class="fas fa-video"></i> Create interviews
-                </li></a>
-                <a href="{% url 'company_interviews' %}">  <li class="nav-item">
-                    <i class="fas fa-video"></i> View interviews
-                </li></a>
-                <a href="{% url 'home' %}">
                 <li class="nav-item">
-                    <i class="fas fa-briefcase"></i> Continue as User
-                </li></a>
-                <a href="{% url 'editcompany' %}">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </li>
                 <li class="nav-item">
-                    <i class="fas fa-briefcase"></i> Edit Profile
-                </li></a>
+                    <i class="fas fa-bullhorn"></i> Job Postings
+                </li>
+                <li class="nav-item">
+                    <i class="fas fa-users"></i> Candidates
+                </li>
+                <li class="nav-item">
+                    <i class="fas fa-calendar"></i> Interviews
+                </li>
+                <li class="nav-item">
+                    <i class="fas fa-cog"></i> Settings
+                </li>
+                <li class="nav-item">
+                    <i class="fas fa-building"></i> Company Profile
+                </li>
             </ul>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Profile Section -->
             <div class="profile-section">
                 <div class="profile">
-                    <img src="{{prof.photo.url}}" alt="Student Avatar">
+                    <img src="{{prof.photo.url}}" alt="Company Logo">
                     <div class="profile-details">
-                        <p><strong>Name:</strong> {{ user.username }}</p>
-                        <p><strong>Global Ranking:</strong> #1,234</p>
-                        <p><strong>Average Interview Score:</strong> 85%</p>
-                        <p><strong>Resume Score:</strong> 92%</p>
+                        <p><strong>Company:</strong> {{ user.username }}</p>
+                        <p><strong>Industry:</strong> Technology</p>
+                        <p><strong>Active Jobs:</strong> 15</p>
+                        <p><strong>Total Candidates:</strong> 234</p>
                         <p><strong>Contact:</strong> {{ user.email }}</p>
                     </div>
                 </div>
             </div>
-            <div>
-                <div class="section">
-                    <h2>AI Interview Hub</h2>
-                    <div class="grid-container">
-                      <!-- Mock Interviews -->
-                      <div class="card">
-                        <h3>Mock Interviews</h3>
-                        <p>Practice AI-based mock interviews.</p>
-                      </div>
-                      <!-- Resume Evaluator -->
-                      <div class="card">
-                        <h3>Resume Evaluator</h3>
-                        <p>Get AI-based resume feedback.</p>
-                      </div>
-                      <!-- Job Applications -->
-                      <div class="card">
-                        <h3>Job Applications</h3>
-                        <p>Apply to AI-recommended jobs.</p>
-                      </div>
-                      <!-- Performance Heatmap -->
-                      <div class="card">
-                        <h3>Performance Heatmap</h3>
-                        <p>Analyze your interview progress.</p>
-                      </div>
+
+            <div class="section">
+                <h2>Recruitment Hub</h2>
+                <div class="grid-container">
+                    <div class="card">
+                        <h3>Active Positions</h3>
+                        <p>Manage your job postings and applications</p>
                     </div>
-                  </div>
-                  <div class="section">
-                    <h2>Progress Stats</h2>
-                    <div class="stats-container">
-                      <!-- LeetCode Stats -->
-                      <div>
-                        <div id="gp1"></div>
-                        <h3>LeetCode Progress</h3>
-                        <div id="gp"></div>
-                        <div align="center">
-                          <img src="https://leetcard.jacoblin.cool/{{ prof.leetcode }}?theme=dark&font=Adamina&ext=heatmap&animation=true&border=1&radius=20" alt="LeetCode Stats"/>
-                        </div>
-                      </div>
-                      <!-- GitHub Stats -->
-                      <div>
-                        <div id="gp1"></div>
-                        <h3>GitHub Activity</h3>
-                        <div id="gp"></div>
-                        <div align="center">
-                          <img src="https://github-readme-stats.vercel.app/api?username={{ prof.github }}&show_icons=true&theme=tokyonight" alt="GitHub Stats" />
-                          <p align="center">
-                            <img src="https://github-readme-streak-stats.herokuapp.com/?user=sathwikshetty33&theme=tokyonight" alt="GitHub Streak"/>
-                          </p>
-                        </div>
-                      </div>
+                    <div class="card">
+                        <h3>Candidate Pool</h3>
+                        <p>Browse and manage applicants</p>
                     </div>
-                  </div>
-                </main>
+                    <div class="card">
+                        <h3>Interview Schedule</h3>
+                        <p>Track upcoming and past interviews</p>
+                    </div>
+                    <div class="card">
+                        <h3>Analytics Dashboard</h3>
+                        <p>Track recruitment metrics and KPIs</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recruitment Analytics</h2>
+                <div class="stats-container">
+                    <div class="card">
+                        <h3>Application Statistics</h3>
+                        <p>Total Applications: 450</p>
+                        <p>Interviews Scheduled: 85</p>
+                        <p>Offers Extended: 25</p>
+                    </div>
+                    <div class="card">
+                        <h3>Hiring Pipeline</h3>
+                        <p>Average Time to Hire: 25 days</p>
+                        <p>Current Open Positions: 15</p>
+                        <p>Acceptance Rate: 82%</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 

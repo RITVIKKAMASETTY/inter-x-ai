@@ -730,9 +730,9 @@ def fetch_github_stats(username):
         print(f"Error fetching GitHub stats: {e}")
     return None
 
-def calculate_profile_score(leetcode_stats, github_stats, job_role, job_description, dsa_weight, dev_weight):
+def calculate_profile_score(leetcode_stats, github_stats, job_role, job_description, dsa_weight, dev_weight, resume_score=0):
     """
-    Calculate overall profile score with DSA and Dev weightage, using stricter criteria
+    Calculate overall profile score with DSA and Dev weightage, using stricter criteria, and incorporating resume score
     
     Parameters:
     - leetcode_stats: dict with LeetCode statistics
@@ -741,6 +741,7 @@ def calculate_profile_score(leetcode_stats, github_stats, job_role, job_descript
     - job_description: str with detailed job description
     - dsa_weight: int percentage weight for DSA (0-100)
     - dev_weight: int percentage weight for Dev (0-100)
+    - resume_score: int score calculated from resume (0-100)
     """
     if dsa_weight + dev_weight != 100:
         raise ValueError("DSA and Dev weights must sum to 100")
@@ -801,12 +802,16 @@ def calculate_profile_score(leetcode_stats, github_stats, job_role, job_descript
         (dev_score * (dev_weight / 100))
     )
     
+    # Incorporate resume score (with a low weight to make it harder to get high scores)
+    # Resume score gets 30% weight in the final score
+    combined_score = weighted_score * 0.7 + (resume_score * 0.3)
+    
     # Apply a curve to make high scores harder to achieve
-    if weighted_score > 60:
-        weighted_score = 60 + (weighted_score - 60) * 0.5  # Reduce growth rate above 60
+    if combined_score > 60:
+        combined_score = 60 + (combined_score - 60) * 0.5  # Reduce growth rate above 60
     
     # Add final check to ensure scores are stricter overall
-    final_score = min(round(weighted_score * 0.9, 2), 100)  # 10% overall reduction
+    final_score = min(round(combined_score * 0.9, 2), 100)  # 10% overall reduction
     
     return final_score
 
@@ -832,6 +837,7 @@ def extract_text_from_file(file):
         return text
     else:
         raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
+
 import re
 import uuid
 from io import BytesIO
@@ -846,8 +852,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import requests
 import json
-
-
 
 # Load environment variables
 def extract_resume_with_groq(extracted_text):
@@ -1048,6 +1052,11 @@ def create_standardized_pdf(resume_data):
                 score = 0
         elements.append(Paragraph(f"Resume Score: {score}/100", score_style))
     
+    # Profile Score (Overall score)
+    if 'profile_score' in resume_data:
+        profile_score = resume_data['profile_score']
+        elements.append(Paragraph(f"Overall Profile Score: {profile_score}/100", score_style))
+    
     # Personal Information
     personal_info = resume_data.get('personal_info', {})
     if not isinstance(personal_info, dict):
@@ -1214,6 +1223,39 @@ def apply_interview(request, interview_id):
                 # Use Groq to extract structured data and calculate score
                 resume_data = extract_resume_with_groq(extracted_resume_text)
                 
+                # Get the calculated resume score
+                resume_score = resume_data.get('resume_score', 0)
+                if isinstance(resume_score, str):
+                    try:
+                        resume_score = float(resume_score)
+                    except ValueError:
+                        resume_score = 0
+                
+                # Get user profile
+                try:
+                    user_profile = UserProfile.objects.get(user=request.user)
+                except UserProfile.DoesNotExist:
+                    messages.error(request, 'Please complete your profile first.')
+                    return redirect('profile_setup')
+                
+                # Fetch profile stats
+                leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
+                github_stats = fetch_github_stats(user_profile.github)
+                
+                # Calculate profile score with weightage - incorporate resume score as well
+                profile_score = calculate_profile_score(
+                    leetcode_stats,
+                    github_stats,
+                    interview.post,
+                    interview.desc,
+                    interview.DSA or 50,
+                    interview.Dev or 50,
+                    resume_score  # Pass resume_score to the function
+                )
+                
+                # Add profile score to resume data for PDF generation
+                resume_data['profile_score'] = profile_score
+                
                 # Generate standardized PDF
                 pdf_buffer = create_standardized_pdf(resume_data)
                 
@@ -1227,42 +1269,12 @@ def apply_interview(request, interview_id):
                     name=f'std_resumes/{std_resume_filename}'
                 )
                 
-                # Get the calculated resume score
-                resume_score = resume_data.get('resume_score', 0)
-                if isinstance(resume_score, str):
-                    try:
-                        resume_score = float(resume_score)
-                    except ValueError:
-                        resume_score = 0
-                
             except ValueError as e:
                 messages.error(request, str(e))
                 return redirect('available_interviews')
             except Exception as e:
                 messages.error(request, f"Error processing resume: {str(e)}")
                 return redirect('available_interviews')
-            
-            # Get user profile
-            try:
-                user_profile = UserProfile.objects.get(user=request.user)
-            except UserProfile.DoesNotExist:
-                messages.error(request, 'Please complete your profile first.')
-                return redirect('profile_setup')
-            
-            # Fetch profile stats
-            leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
-            github_stats = fetch_github_stats(user_profile.github)
-            
-            # Calculate profile score with weightage - incorporate resume score as well
-            profile_score = calculate_profile_score(
-                leetcode_stats,
-                github_stats,
-                interview.post,
-                interview.desc,
-                interview.DSA or 50,
-                interview.Dev or 50,
-                
-            )
             
             # Save extracted resume data as JSON
             try:
@@ -1282,7 +1294,7 @@ def apply_interview(request, interview_id):
                 resume=resume,
                 standardized_resume=standardized_pdf,
                 extratedResume=resume_json,  
-                score=profile_score,
+                score=profile_score,  # Use the calculated profile score
             )
             
             # Set the original resume filename
@@ -1297,3 +1309,43 @@ def apply_interview(request, interview_id):
             return redirect('available_interviews')
             
     return redirect('available_interviews')
+
+def chat_history_view(request, application_id):
+    # Get the application or return 404 if not found
+    application = get_object_or_404(Application, id=application_id)
+    
+    # Get all conversations for this application
+    conversations = Customconversation.objects.filter(Application=application).order_by('time')
+    
+    chat_history = []
+    
+    # For each conversation, get all questions
+    for conversation in conversations:
+        questions = Customquestions.objects.filter(convo=conversation).order_by('created_at')
+        
+        for question in questions:
+            # Add the question to chat history
+            chat_html = f'<div class="message user">{question.question}</div>'
+            chat_history.append(chat_html)
+            
+            # If there's an AI response (assuming it's the next question by the AI)
+            ai_response = Customquestions.objects.filter(
+                convo=conversation,
+                created_at__gt=question.created_at,
+                user="ai"
+            ).first()
+            
+            if ai_response:
+                chat_html = f'<div class="message ai">{ai_response.question}</div>'
+                chat_history.append(chat_html)
+    
+    # Join all chat messages into a single HTML string
+    chat_html_string = ''.join(chat_history)
+    
+    # Set the chat history in localStorage via template context
+    context = {
+        'chat_history': chat_html_string,
+        'application': application
+    }
+    
+    return render(request, 'organization/chathistory.html', context)
