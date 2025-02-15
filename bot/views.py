@@ -9,13 +9,20 @@ import json
 from django.http import JsonResponse
 from django.contrib import messages
 from .utils import *
+from users.models import *
+from organization.models import *
 
 
+@login_required(login_url='reg')
+def home_view(request):
 
-
-
-def inm(request):
-    return redirect('home')
+    us = request.user
+    prof, created = UserProfile.objects.get_or_create(user=us)
+    if organization.objects.get(org=us):
+        a = True
+    else :
+        a = False
+    return render(request, 'bot/userdashboard.html', {'prof' : prof, 'user' : us,'a' : a})
 
 
 @login_required

@@ -305,27 +305,23 @@
                 <h3>Welcome to InterXai</h3>
             </div>
             <ul class="nav-links">
-                <li class="nav-item active">
-                    <i class="fas fa-home"></i> Dashboard
-                </li>
+               <a href="{% url 'compdash' %}"><li class="nav-item">
+                   <i class="fas fa-video"></i> Dashboard
+                </li></a>
+              <a href="{% url 'createposting' %}">  <li class="nav-item">
+                    <i class="fas fa-video"></i> Create postings
+                </li></a>
+                 <a href="{% url 'createcustominterview' %}">  <li class="nav-item">
+                    <i class="fas fa-video"></i> View interviews
+                </li></a>
+                <a href="{% url 'home' %}">
                 <li class="nav-item">
-                    <i class="fas fa-video"></i> Mock Interviews
-                </li>
+                    <i class="fas fa-briefcase"></i> Continue as User
+                </li></a>
+                <a href="{% url 'editcompany' %}">
                 <li class="nav-item">
-                    <i class="fas fa-file-alt"></i> Resume Evaluator
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-briefcase"></i> Job Applications
-                </li>
-                {% if a %}
-                <li class="nav-item">
-                    <i class="fas fa-cog"></i> Continue as organization
-                </li>
-                {% else %}
-                <li class="nav-item">
-                    <i class="fas fa-cog"></i> Become a Organization
-                </li>
-                {% endif %}
+                    <i class="fas fa-briefcase"></i> Edit Profile
+                </li></a>
             </ul>
         </aside>
 
