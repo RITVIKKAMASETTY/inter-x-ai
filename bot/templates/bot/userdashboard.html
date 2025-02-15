@@ -340,6 +340,16 @@
                         <i class="fa-solid fa-map-location"></i> roadmaps
                     </li>
                 </a>
+                <a href="{% url 'logout' %}">
+                    <li class="nav-item">
+                       <i class="fa-solid fa-right-from-bracket"></i> logout
+                    </li>
+                </a>
+                <a href="{% url 'mockinterview' %}">
+                    <li class="nav-item">
+                        <i class="fa-solid fa-map-location"></i> mock interviews
+                    </li>
+                </a>
             </ul>
         </aside>
 
@@ -348,7 +358,7 @@
             <!-- Profile Section -->
             <div class="profile-section">
                 <div class="profile">
-                    <img src="{{prof.photo.url}}" alt="Student Avatar">
+                                        <img src="{% if prof.photo %}{{ prof.photo.url }}{% else %}/path/to/default/image.jpg{% endif %}" alt="Student Avatar">
                     <div class="profile-details">
                         <p><strong>Name:</strong> {{ user.username }}</p>
                         <p><strong>Global Ranking:</strong> #1,234</p>

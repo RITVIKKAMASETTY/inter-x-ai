@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Interviews</title>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background: #f4f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            border-left: 5px solid #007bff;
+            text-decoration: none;  /* Remove default anchor styling */
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 6px 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        .icon {
+            font-size: 30px;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .job-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .job-description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="job-container">
+        {% for post in ps %}
+        <a href="{% url 'chatcreate' post.id %}" class="card">
+            <i class="fas fa-briefcase icon"></i>
+            <div class="job-title">{{ post.post }}</div>
+            <div class="job-description">{{ post.content }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</body>
+</html>

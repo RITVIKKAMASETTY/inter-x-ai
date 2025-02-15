@@ -11,6 +11,7 @@ from django.contrib import messages
 from .utils import *
 from users.models import *
 from organization.models import *
+from django.utils import timezone
 
 
 @login_required(login_url='reg')
@@ -18,13 +19,16 @@ def home_view(request):
 
     us = request.user
     prof, created = UserProfile.objects.get_or_create(user=us)
-    if organization.objects.get(org=us):
+    if organization.objects.filter(org=us).exists():
         a = True
     else :
         a = False
     return render(request, 'bot/userdashboard.html', {'prof' : prof, 'user' : us,'a' : a})
 
-
+@login_required()
+def mockinterview(request):
+    ps = posts.objects.all()
+    return render(request,'bot/mockinterview.html',{'ps':ps})
 @login_required
 def chatcreate(request, post):
     try:

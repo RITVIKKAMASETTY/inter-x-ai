@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
 
     path('',views.home_view,name = 'home'),
+    path('mock-interview/',views.mockinterview,name='mockinterview'),
     path('chat_create-<int:post>', views.chatcreate,name='chatcreate'),
     path('chat-<str:convoid>/',views.chat,name='chat'),
     path('previous_interviews/', views.previous_interviews, name='previous_interviews'),
