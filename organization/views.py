@@ -817,39 +817,62 @@ def calculate_profile_score(leetcode_stats, github_stats, job_role, job_descript
     return min(round(score, 2), 100)
 
 
+import PyPDF2
+from docx import Document
+from io import BytesIO
+
+def extract_text_from_file(file):
+    """
+    Extracts text from an uploaded file (PDF or DOCX).
+    """
+    if file.content_type == 'application/pdf':
+        # Handle PDF files
+        pdf_reader = PyPDF2.PdfReader(BytesIO(file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        return text
+    elif file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        # Handle DOCX files
+        doc = Document(BytesIO(file.read()))
+        text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        return text
+    else:
+        raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
+
 def apply_interview(request, interview_id):
     if request.method == 'POST':
         try:
             # Get interview
             interview = Custominterviews.objects.get(id=interview_id)
-
             # Check deadline
             if interview.submissionDeadline < timezone.now():
                 messages.error(request, 'Application deadline has passed.')
                 return redirect('available_interviews')
-
             # Check if already applied
             if Application.objects.filter(user=request.user, interview_id=interview_id).exists():
                 messages.error(request, 'You have already applied for this interview.')
                 return redirect('available_interviews')
-
             # Handle resume upload
             resume = request.FILES.get('resume')
             if not resume:
                 messages.error(request, 'Please upload your resume.')
                 return redirect('available_interviews')
-
+            # Extract text from the uploaded resume
+            try:
+                extracted_resume_text = extract_text_from_file(resume)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('available_interviews')
             # Get user profile
             try:
                 user_profile = UserProfile.objects.get(user=request.user)
             except UserProfile.DoesNotExist:
                 messages.error(request, 'Please complete your profile first.')
                 return redirect('profile_setup')
-
             # Fetch profile stats
             leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
             github_stats = fetch_github_stats(user_profile.github)
-
             # Calculate profile score
             profile_score = calculate_profile_score(
                 leetcode_stats,
@@ -857,21 +880,17 @@ def apply_interview(request, interview_id):
                 interview.post,
                 interview.desc
             )
-
             # Create application
             application = Application.objects.create(
                 user=request.user,
                 interview=interview,
                 resume=resume,
+                extratedResume=extracted_resume_text,  # Store extracted text here
                 score=profile_score,
-
             )
-
             messages.success(request, 'Application submitted successfully!')
             return redirect('application_status', application_id=application.id)
-
         except Exception as e:
             messages.error(request, f'An error occurred: {str(e)}')
             return redirect('available_interviews')
-
     return redirect('available_interviews')
