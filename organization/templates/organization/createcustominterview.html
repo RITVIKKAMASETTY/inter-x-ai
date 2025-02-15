@@ -70,12 +70,6 @@
         .submit-btn:hover {
             background-color: #005f8d;
         }
-        footer {
-            text-align: center;
-            padding: 10px;
-            background-color: #f2f2f2;
-            margin-top: 20px;
-        }
         .errorlist {
             color: #dc3545;
             list-style: none;
@@ -101,12 +95,67 @@
             margin-top: 5px;
             display: none;
         }
+        
+        /* Slider specific styles */
+        .slider-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .slider-value {
+            font-weight: bold;
+            color: #0073b1;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0073b1;
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0073b1;
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #f2f2f2;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <header>
         <h1>Schedule Custom Interview</h1>
     </header>
+    
     <div class="container">
         <h2>Interview Details</h2>
         <form method="POST" id="interview-form" onsubmit="return validateForm()">
@@ -122,6 +171,26 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
+            </div>
+
+            <div class="slider-container">
+                <h3 style="color: #0073b1; margin-bottom: 15px;">Skill Distribution</h3>
+                
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <label for="id_DSA">DSA Weightage</label>
+                        <span class="slider-value" id="dsa-value">50%</span>
+                    </div>
+                    <input type="range" id="id_DSA" name="DSA" min="0" max="100" value="50" class="slider">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <label for="id_Dev">Development Weightage</label>
+                        <span class="slider-value" id="dev-value">50%</span>
+                    </div>
+                    <input type="range" id="id_Dev" name="Dev" min="0" max="100" value="50" class="slider" disabled>
+                </div>
             </div>
 
             <div class="form-group">
@@ -205,12 +274,31 @@
             <button type="submit" class="submit-btn">Schedule Interview</button>
         </form>
     </div>
+
     <footer>
         <p>&copy; 2025 Interview Portal. All rights reserved.</p>
     </footer>
 
     <script>
-        // Add event listeners to validate dates on input change
+        // Slider functionality
+        const dsaSlider = document.getElementById('id_DSA');
+        const devSlider = document.getElementById('id_Dev');
+        const dsaValue = document.getElementById('dsa-value');
+        const devValue = document.getElementById('dev-value');
+
+        dsaSlider.addEventListener('input', function() {
+            const dsaVal = parseInt(this.value);
+            const devVal = 100 - dsaVal;
+            
+            // Update the dev slider
+            devSlider.value = devVal;
+            
+            // Update the displayed values
+            dsaValue.textContent = `${dsaVal}%`;
+            devValue.textContent = `${devVal}%`;
+        });
+
+        // Date validation
         document.getElementById('id_submissionDeadline').addEventListener('input', validateDates);
         document.getElementById('id_startTime').addEventListener('input', validateDates);
         document.getElementById('id_endTime').addEventListener('input', validateDates);
@@ -254,7 +342,7 @@
             const endTime = new Date(document.getElementById('id_endTime').value);
 
             if (submissionDeadline >= startTime || startTime >= endTime) {
-                validateDates(); // Show all relevant error messages
+                validateDates();
                 return false;
             }
 

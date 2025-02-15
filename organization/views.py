@@ -251,7 +251,7 @@ def create_posting(request):
             interview.org = user_org  # Assign the organization
             interview.save()
             messages.success(request, 'Custom interview created successfully!')
-            return redirect('custom_interview_success')
+            return redirect('compdash')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -268,7 +268,7 @@ def create_custom_interview(request):
             interview.org = user_org  # Assign the organization
             interview.save()
             messages.success(request, 'Custom interview created successfully!')
-            return redirect('custom_interview_success')
+            return redirect('company_interviews')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
