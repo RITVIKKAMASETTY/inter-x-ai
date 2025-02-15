@@ -251,7 +251,7 @@ def create_posting(request):
             interview.org = user_org  # Assign the organization
             interview.save()
             messages.success(request, 'Custom interview created successfully!')
-            return redirect('compdash')
+            return redirect('company_interviews')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -383,7 +383,10 @@ def evaluate_interview(request, application_id):
     application.completed = True
     if leaderBoard.objects.filter(Application=application).exists():
         messages.warning(request, 'This interview has already been evaluated.')
-        return redirect('home') 
+        return redirect('home')  # Replace 'home' with your home URL name
+    # if application.isCheated:
+    #     messages.warning(request, 'This interview has recorded malpractice.')
+    #     return redirect('home')
     if not application.attempted:
         messages.warning(request, 'This interview has not been attempted.')
         return redirect('home')
@@ -727,77 +730,49 @@ def fetch_github_stats(username):
         print(f"Error fetching GitHub stats: {e}")
     return None
 
+def calculate_profile_score(leetcode_stats, github_stats, job_role, job_description, dsa_weight, dev_weight):
+    """
+    Calculate overall profile score with DSA and Dev weightage
+    
+    Parameters:
+    - leetcode_stats: dict with LeetCode statistics
+    - github_stats: dict with GitHub statistics
+    - job_role: str describing the role
+    - job_description: str with detailed job description
+    - dsa_weight: int percentage weight for DSA (0-100)
+    - dev_weight: int percentage weight for Dev (0-100)
+    """
+    if dsa_weight + dev_weight != 100:
+        raise ValueError("DSA and Dev weights must sum to 100")
 
-def analyze_profile_with_groq(leetcode_stats, github_stats, job_role, job_description):
-    """Analyze profile using Groq API"""
-    try:
-        client = groq.Client(api_key="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")
-
-        # Prepare the analysis prompt
-        prompt = f"""
-        Analyze this candidate's technical profile:
-
-        LeetCode Statistics:
-        - Problems Solved: {leetcode_stats.get('total_solved') if leetcode_stats else 'No data'}
-
-        GitHub Statistics:
-        - Public Repositories: {github_stats.get('public_repos') if github_stats else 'No data'}
-        - Programming Languages: {', '.join(github_stats.get('languages', [])) if github_stats else 'No data'}
-        - Recent Contributions: {github_stats.get('contributions') if github_stats else 'No data'}
-
-        For this job:
-        Role: {job_role}
-        Description: {job_description}
-
-        Based on their technical profile, rate their fit for this role on a scale of 0-20.
-        Consider:
-        1. Problem-solving skills (LeetCode performance)
-        2. Real-world coding experience (GitHub activity)
-        3. Technology stack match (Languages used vs job requirements)
-        4. Active coding practice (Recent contributions)
-
-        Return only a numeric score between 0 and 20.
-        """
-
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="mixtral-8x7b-32768",
-            temperature=0.1,
-        )
-
-        # Extract and validate score
-        try:
-            score = float(response.choices[0].message.content.strip())
-            return min(max(score, 0), 20)  # Ensure score is between 0 and 20
-        except (ValueError, AttributeError):
-            return 10  # Default score if parsing fails
-
-    except Exception as e:
-        print(f"Error in Groq analysis: {e}")
-        return 10  # Default score if analysis fails
-
-
-def calculate_profile_score(leetcode_stats, github_stats, job_role, job_description):
-    """Calculate overall profile score"""
-    score = 0
-
-    # LeetCode scoring (max 40 points)
+    # DSA Score Calculation (based on LeetCode)
+    dsa_score = 0
     if leetcode_stats:
         problems_solved = leetcode_stats.get('total_solved', 0)
-        score += min(problems_solved / 5, 40)
+        # Scale problems solved to 100 points max
+        dsa_score = min(problems_solved / 5, 100)
 
-    # GitHub scoring (max 40 points)
+    # Dev Score Calculation (based on GitHub)
+    dev_score = 0
     if github_stats:
         repos = github_stats.get('public_repos', 0)
         contributions = github_stats.get('contributions', 0)
         languages = len(github_stats.get('languages', []))
-        score += min((repos * 2) + (languages * 2) + (contributions / 100), 40)
+        
+        # Calculate components of dev score
+        repo_score = min(repos * 10, 40)  # Max 40 points for repositories
+        contrib_score = min(contributions / 2, 30)  # Max 30 points for contributions
+        lang_score = min(languages * 10, 30)  # Max 30 points for language diversity
+        
+        dev_score = repo_score + contrib_score + lang_score
 
-    # Job relevance scoring from Groq (max 20 points)
-    groq_score = analyze_profile_with_groq(leetcode_stats, github_stats, job_role, job_description)
-    score += groq_score
+    # Apply weightage
+    weighted_score = (
+        (dsa_score * (dsa_weight / 100)) +
+        (dev_score * (dev_weight / 100))
+    )
 
-    return min(round(score, 2), 100)
+    return min(round(weighted_score, 2), 100)
 
 
 import PyPDF2
@@ -822,61 +797,6 @@ def extract_text_from_file(file):
         return text
     else:
         raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
-
-def apply_interview(request, interview_id):
-    if request.method == 'POST':
-        try:
-            # Get interview
-            interview = Custominterviews.objects.get(id=interview_id)
-            # Check deadline
-            if interview.submissionDeadline < timezone.now():
-                messages.error(request, 'Application deadline has passed.')
-                return redirect('available_interviews')
-            # Check if already applied
-            if Application.objects.filter(user=request.user, interview_id=interview_id).exists():
-                messages.error(request, 'You have already applied for this interview.')
-                return redirect('available_interviews')
-            # Handle resume upload
-            resume = request.FILES.get('resume')
-            if not resume:
-                messages.error(request, 'Please upload your resume.')
-                return redirect('available_interviews')
-            # Extract text from the uploaded resume
-            try:
-                extracted_resume_text = extract_text_from_file(resume)
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect('available_interviews')
-            # Get user profile
-            try:
-                user_profile = UserProfile.objects.get(user=request.user)
-            except UserProfile.DoesNotExist:
-                messages.error(request, 'Please complete your profile first.')
-                return redirect('profile_setup')
-            # Fetch profile stats
-            leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
-            github_stats = fetch_github_stats(user_profile.github)
-            # Calculate profile score
-            profile_score = calculate_profile_score(
-                leetcode_stats,
-                github_stats,
-                interview.post,
-                interview.desc
-            )
-            # Create application
-            application = Application.objects.create(
-                user=request.user,
-                interview=interview,
-                resume=resume,
-                extratedResume=extracted_resume_text,  # Store extracted text here
-                score=profile_score,
-            )
-            messages.success(request, 'Application submitted successfully!')
-            return redirect('application_status', application_id=application.id)
-        except Exception as e:
-            messages.error(request, f'An error occurred: {str(e)}')
-            return redirect('available_interviews')
-    return redirect('available_interviews')
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -1046,6 +966,135 @@ def apply_interview(request, interview_id):
             # Set the filename for the standardized resume
             application.standardized_resume.name = f'standardized_resume_{application.id}.pdf'
             application.save()
+            
+            messages.success(request, 'Application submitted successfully!')
+            return redirect('application_status', application_id=application.id)
+            
+        except Exception as e:
+            messages.error(request, f'An error occurred: {str(e)}')
+            return redirect('available_interviews')
+            
+    return redirect('available_interviews')
+def standardize_resume(extracted_text):
+    """
+    Standardize extracted resume text into a common template format
+    """
+    template = {
+        "personal_info": {},
+        "education": [],
+        "experience": [],
+        "skills": [],
+        "projects": [],
+        "certifications": []
+    }
+    
+    try:
+        # Basic text cleaning
+        text = extracted_text.strip()
+        sections = text.split('\n\n')
+        
+        current_section = None
+        for section in sections:
+            section = section.strip().lower()
+            
+            # Identify sections
+            if any(keyword in section for keyword in ['name:', 'email:', 'phone:', 'address:']):
+                current_section = "personal_info"
+                # Extract personal info using regex
+                template["personal_info"].update({
+                    "name": re.search(r'name:?\s*(.*)', section, re.I),
+                    "email": re.search(r'email:?\s*(.*)', section, re.I),
+                    "phone": re.search(r'phone:?\s*(.*)', section, re.I)
+                })
+            
+            elif any(keyword in section for keyword in ['education', 'academic']):
+                current_section = "education"
+                # Extract education details
+                education_entries = re.findall(r'(.*?degree|.*?university|.*?college).*?(\d{4})', section, re.I)
+                template["education"].extend([{"institution": edu[0], "year": edu[1]} for edu in education_entries])
+            
+            elif any(keyword in section for keyword in ['experience', 'work']):
+                current_section = "experience"
+                # Extract work experience
+                experience_entries = re.findall(r'(.*?company|.*?position).*?(\d{4})', section, re.I)
+                template["experience"].extend([{"role": exp[0], "year": exp[1]} for exp in experience_entries])
+            
+            elif any(keyword in section for keyword in ['skill', 'technology', 'language']):
+                current_section = "skills"
+                # Extract skills
+                skills = re.findall(r'[\w\+\#]+(?:\s*[\w\+\#]+)*', section)
+                template["skills"].extend([skill for skill in skills if len(skill) > 2])
+            
+            elif any(keyword in section for keyword in ['project']):
+                current_section = "projects"
+                # Extract projects
+                projects = re.findall(r'(.*?)(?=\n|$)', section)
+                template["projects"].extend([{"name": proj.strip()} for proj in projects if len(proj.strip()) > 0])
+
+    except Exception as e:
+        print(f"Error standardizing resume: {e}")
+        
+    return template
+
+def apply_interview(request, interview_id):
+    if request.method == 'POST':
+        try:
+            # Get interview
+            interview = Custominterviews.objects.get(id=interview_id)
+            
+            # Validation checks
+            if interview.submissionDeadline < timezone.now():
+                messages.error(request, 'Application deadline has passed.')
+                return redirect('available_interviews')
+                
+            if Application.objects.filter(user=request.user, interview_id=interview_id).exists():
+                messages.error(request, 'You have already applied for this interview.')
+                return redirect('available_interviews')
+            
+            # Handle resume upload
+            resume = request.FILES.get('resume')
+            if not resume:
+                messages.error(request, 'Please upload your resume.')
+                return redirect('available_interviews')
+            
+            # Extract and standardize resume
+            try:
+                extracted_resume_text = extract_text_from_file(resume)
+                standardized_resume = standardize_resume(extracted_resume_text)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('available_interviews')
+            
+            # Get user profile
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+            except UserProfile.DoesNotExist:
+                messages.error(request, 'Please complete your profile first.')
+                return redirect('profile_setup')
+            
+            # Fetch profile stats
+            leetcode_stats = fetch_leetcode_stats(user_profile.leetcode)
+            github_stats = fetch_github_stats(user_profile.github)
+            
+            # Calculate profile score with weightage
+            profile_score = calculate_profile_score(
+                leetcode_stats,
+                github_stats,
+                interview.post,
+                interview.desc,
+                interview.DSA or 50,  # Default 50-50 if not specified
+                interview.Dev or 50
+            )
+            
+            # Create application
+            application = Application.objects.create(
+                user=request.user,
+                interview=interview,
+                resume=resume,
+                standardized_resume=json.dumps(standardized_resume),
+                extracted_resume=extracted_resume_text,
+                score=profile_score,
+            )
             
             messages.success(request, 'Application submitted successfully!')
             return redirect('application_status', application_id=application.id)
