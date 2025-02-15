@@ -374,21 +374,7 @@ def compchat(request, convoid):
 
     })
     # Fetch all questions for this conversation
-    questions_list = Customquestions.objects.filter(convo=convo)
-
-    # Initialize with a default question if no questions exist
-    if not questions_list.exists():
-        first_question = "Welcome to the interview! Can you tell me about your experience in this field?"
-        questions.objects.create(convo=convo, question=first_question, user='ai')
-        questions_list = questions.objects.filter(convo=convo)
-    is_cheated = convo.Application.isCheated
-    return render(request, 'organization/i.html', {
-        'convo': convo,
-        'questions': questions_list,
-        'applicationId': convo.Application.id,
-        'is_cheated' : is_cheated
-    })
-
+ 
 
 @login_required
 def evaluate_interview(request, application_id):

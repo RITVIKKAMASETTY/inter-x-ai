@@ -21,6 +21,9 @@ class Custominterviews(models.Model):
     questions = models.TextField()
     startTime = models.DateTimeField()
     endTime = models.DateTimeField()
+    DSA = models.IntegerField(blank=True,null=True)
+    Dev = models.IntegerField(blank=True,null=True)
+
     def __str__(self):
         return f'{self.org.orgname}-{self.post}'
 class Application(models.Model):
@@ -31,6 +34,7 @@ class Application(models.Model):
     attempted = models.BooleanField(default=False)
     isCheated = models.BooleanField(default=False)
     extratedResume = models.TextField(blank=True,null=True)
+    virtualResume = models.TextField(blank=True,null=True)
     score = models.IntegerField(default=0)
     def __str__(self):
         return f'{self.user.username}-{self.interview.org.orgname}'
@@ -61,3 +65,14 @@ class leaderBoard(models.Model):
 
     def __str__(self):
         return f'{self.Application.user.username}-{self.Score}'
+
+class resumeconvo(models.Model):
+    Application = models.ForeignKey(Application,on_delete=models.CASCADE)
+    time = models.DateTimeField(auto_now_add=True)
+class resquestions(models.Model):
+    convo = models.ForeignKey(resumeconvo, on_delete=models.CASCADE, db_index=True, default=1)
+    user = models.CharField(max_length=100, default="user")
+    question = models.TextField(default="Default question text")
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f'{self.convo.Application.user.username}-{self.id}'

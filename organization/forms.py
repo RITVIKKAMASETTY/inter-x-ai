@@ -5,7 +5,7 @@ class CustomInterviewsform(forms.ModelForm):
 
     class Meta:
         model = Custominterviews
-        fields = ('desc', 'post', 'questions', 'submissionDeadline','experience', 'startTime', 'endTime')
+        fields = ('desc', 'post', 'questions','DSA','Dev' 'submissionDeadline','experience', 'startTime', 'endTime')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
