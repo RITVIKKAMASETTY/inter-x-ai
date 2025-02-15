@@ -383,10 +383,7 @@ def evaluate_interview(request, application_id):
     application.completed = True
     if leaderBoard.objects.filter(Application=application).exists():
         messages.warning(request, 'This interview has already been evaluated.')
-        return redirect('home')  # Replace 'home' with your home URL name
-    # if application.isCheated:
-    #     messages.warning(request, 'This interview has recorded malpractice.')
-    #     return redirect('home')
+        return redirect('home') 
     if not application.attempted:
         messages.warning(request, 'This interview has not been attempted.')
         return redirect('home')
