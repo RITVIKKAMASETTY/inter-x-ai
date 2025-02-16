@@ -118,5 +118,3 @@ The leaderboard ranks users based on:
 InterXAI is transforming how candidates prepare for interviews and how companies conduct recruitment. By leveraging AI-driven mock interviews, coding tests, and career analytics, it ensures a next-generation hiring experience.
 
 ---
-
-
