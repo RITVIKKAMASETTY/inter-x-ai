@@ -148,28 +148,65 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --background-color: #f8fafc;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --white: #ffffff;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --text-dark: #1e293b;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            background-color: var(--background-color);
+            background-color: var(--gray-50);
+            color: var(--text-dark);
+            line-height: 1.6;
             min-height: 100vh;
             position: relative;
             padding-bottom: 60px;
         }
 
-        .navbar {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        a {
+            text-decoration: none;
+            color: inherit;
         }
 
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            padding: 1rem;
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        /* Interview List */
         .interview-list-item {
-            background: white;
+            background: var(--white);
             border-radius: 0.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .interview-list-item:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .interview-header {
@@ -178,23 +215,23 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--gray-200);
             transition: background-color 0.2s ease;
         }
 
         .interview-header:hover {
-            background-color: #f8fafc;
+            background-color: var(--gray-50);
         }
 
         .interview-header.active {
-            background-color: #f0f9ff;
-            border-bottom: 2px solid var(--primary-color);
+            background-color: var(--primary-light);
+            border-bottom: 2px solid var(--primary);
         }
 
         .interview-content {
             display: none;
             padding: 1.5rem;
-            background: white;
+            background: var(--white);
         }
 
         .interview-content.show {
@@ -227,9 +264,15 @@
             color: #065f46;
         }
 
+        .deadline-badge {
+            font-size: 0.875rem;
+            color: var(--text-dark);
+        }
+
+        /* Footer */
         .footer {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
             text-align: center;
             padding: 1rem;
             position: absolute;
@@ -237,14 +280,22 @@
             width: 100%;
         }
 
-        .deadline-badge {
-            font-size: 0.875rem;
-            color: #6b7280;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .interview-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .deadline-badge {
+                margin-top: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
+    <nav class="navbar">
         <div class="container">
             <a class="navbar-brand text-white" href="#">
                 <i class="fas fa-briefcase me-2"></i>

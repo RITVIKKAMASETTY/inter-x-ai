@@ -260,99 +260,99 @@
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <div class="mobile-nav">
-            <div class="hamburger" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
+  
+    <body>
+        <div class="dashboard">
+            <div class="mobile-nav">
+                <div class="hamburger" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <h3>Organization Dashboard</h3>
             </div>
-            <h3>Organization Dashboard</h3>
+    
+            <aside class="sidebar" id="sidebar">
+                <div class="close-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div class="sidebar-header">
+                    <h3>Welcome to InterXai</h3>
+                </div>
+                <ul class="nav-links">
+                    <a href="{% url 'compdash' %}"><li class="nav-item">
+                        <i class="fas fa-chart-line"></i> Dashboard
+                    </li></a>
+                    <a href="{% url 'createposting' %}"><li class="nav-item">
+                        <i class="fas fa-bullhorn"></i> Job Postings
+                    </li></a>
+                    <a href="{% url 'createcustominterview' %}"><li class="nav-item">
+                        <i class="fas fa-users"></i> Interviews
+                    </li></a>
+                    <a href="{% url 'company_interviews' %}"><li class="nav-item">
+                        <i class="fas fa-calendar"></i> View Interviews
+                    </li></a>
+                    <a href="{% url 'editcompany' %}"><li class="nav-item">
+                        <i class="fas fa-cog"></i> Settings
+                    </li></a>
+                   
+                </ul>
+            </aside>
+    
+            <main class="main-content">
+                <div class="profile-section">
+                    <div class="profile">
+                        <img src="{{ us.photo.url|default:'/static/default-logo.png' }}" alt="Company Logo">
+                        <div class="profile-details">
+                            <p><strong>Company:</strong> {{ us.orgname }}</p>
+                            <p><strong>Industry:</strong> {{ user.profile.industry|default:"Technology" }}</p>
+                            <p><strong>Active Jobs:</strong> {{ active_jobs_count }}</p>
+                            <p><strong>Total Candidates:</strong> {{ total_candidates }}</p>
+                            <p><strong>Contact:</strong> {{ user.email }}</p>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="section">
+                    <h2>Recruitment Hub</h2>
+                    <div class="grid-container">
+                        <div class="card" onclick="window.location.href='#'">
+                            <h3>Active Positions</h3>
+                            <p>Manage your job postings and applications</p>
+                        </div>
+                        <div class="card" onclick="window.location.href='#'">
+                            <h3>Candidate Pool</h3>
+                            <p>Browse and manage applicants</p>
+                        </div>
+                        <div class="card" onclick="window.location.href='#'">
+                            <h3>Interview Schedule</h3>
+                            <p>Track upcoming and past interviews</p>
+                        </div>
+                        <div class="card" onclick="window.location.href='#'">
+                            <h3>Analytics Dashboard</h3>
+                            <p>Track recruitment metrics and KPIs</p>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="section">
+                    <h2>Recruitment Analytics</h2>
+                    <div class="stats-container">
+                        <div class="card">
+                            <h3>Application Statistics</h3>
+                            <p>Total Applications: {{ total_applications }}</p>
+                            <p>Interviews Scheduled: {{ interviews_scheduled }}</p>
+                            <p>Offers Extended: {{ offers_extended }}</p>
+                        </div>
+                        <div class="card">
+                            <h3>Hiring Pipeline</h3>
+                            <p>Average Time to Hire: {{ avg_time_to_hire }} days</p>
+                            <p>Current Open Positions: {{ active_jobs_count }}</p>
+                            <p>Acceptance Rate: {{ acceptance_rate }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
-
-        <aside class="sidebar" id="sidebar">
-            <div class="close-btn" onclick="toggleSidebar()">
-                <i class="fas fa-times"></i>
-            </div>
-            <div class="sidebar-header">
-                <h3>Welcome to InterXai</h3>
-            </div>
-            <ul class="nav-links">
-                <li class="nav-item">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-bullhorn"></i> Job Postings
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-users"></i> Candidates
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-calendar"></i> Interviews
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-cog"></i> Settings
-                </li>
-                <li class="nav-item">
-                    <i class="fas fa-building"></i> Company Profile
-                </li>
-            </ul>
-        </aside>
-
-        <main class="main-content">
-            <div class="profile-section">
-                <div class="profile">
-                    <img src="{{prof.photo.url}}" alt="Company Logo">
-                    <div class="profile-details">
-                        <p><strong>Company:</strong> {{ user.username }}</p>
-                        <p><strong>Industry:</strong> Technology</p>
-                        <p><strong>Active Jobs:</strong> 15</p>
-                        <p><strong>Total Candidates:</strong> 234</p>
-                        <p><strong>Contact:</strong> {{ user.email }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Recruitment Hub</h2>
-                <div class="grid-container">
-                    <div class="card">
-                        <h3>Active Positions</h3>
-                        <p>Manage your job postings and applications</p>
-                    </div>
-                    <div class="card">
-                        <h3>Candidate Pool</h3>
-                        <p>Browse and manage applicants</p>
-                    </div>
-                    <div class="card">
-                        <h3>Interview Schedule</h3>
-                        <p>Track upcoming and past interviews</p>
-                    </div>
-                    <div class="card">
-                        <h3>Analytics Dashboard</h3>
-                        <p>Track recruitment metrics and KPIs</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Recruitment Analytics</h2>
-                <div class="stats-container">
-                    <div class="card">
-                        <h3>Application Statistics</h3>
-                        <p>Total Applications: 450</p>
-                        <p>Interviews Scheduled: 85</p>
-                        <p>Offers Extended: 25</p>
-                    </div>
-                    <div class="card">
-                        <h3>Hiring Pipeline</h3>
-                        <p>Average Time to Hire: 25 days</p>
-                        <p>Current Open Positions: 15</p>
-                        <p>Acceptance Rate: 82%</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
+    
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');

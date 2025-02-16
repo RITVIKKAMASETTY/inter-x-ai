@@ -7,7 +7,7 @@ from django.utils import timezone
 import json
 from .utils import *
 from django.contrib import messages
-
+from datetime import datetime, timezone
 from organization.models import *
 
 
@@ -32,7 +32,7 @@ def register(request):
             # Generate and store verification code in session
             code = generate_verification_code()
             request.session['verification_code'] = code
-            request.session['code_generated_at'] = timezone.now().timestamp()
+            request.session['code_generated_at'] = datetime.now(timezone.utc).timestamp()
             send_verification_email(user_data['email'], code)
 
             return redirect('verify_email')
@@ -54,7 +54,7 @@ def verify_email(request):
             stored_code = request.session.get('verification_code')
             code_generated_at = request.session.get('code_generated_at')
 
-            current_time = timezone.now().timestamp()
+            current_time = datetime.now(timezone.utc).timestamp()
             is_expired = (current_time - code_generated_at) > 30
 
             if stored_code and submitted_code == stored_code and not is_expired:
@@ -105,7 +105,7 @@ def resend_code(request):
             del request.session['verification_code']
             del request.session['code_generated_at']
             request.session['verification_code'] = code
-            request.session['code_generated_at'] = timezone.now().timestamp()
+            request.session['code_generated_at'] = datetime.now(timezone.utc).timestamp()
             send_verification_email(pending_user['email'], code)
             return JsonResponse({'success': True})
 
@@ -143,8 +143,7 @@ def forgot_password(request):
             request.session['reset_code'] = reset_code
             request.session['reset_email'] = email
             request.session['username'] = username
-            request.session['code_generated_at'] = timezone.now().timestamp()
-
+            request.session['code_generated_at'] = datetime.now(timezone.utc).timestamp()
             # Send reset code email
             send_reset_code_email(email, reset_code)
 
@@ -169,7 +168,7 @@ def verify_reset_code(request):
             code_generated_at = request.session.get('code_generated_at')
 
             # Check if code is expired (30 seconds)
-            current_time = timezone.now().timestamp()
+            current_time = datetime.now(timezone.utc).timestamp()
             is_expired = (current_time - code_generated_at) > 30
 
             if stored_code and submitted_code == stored_code and not is_expired:
@@ -195,7 +194,7 @@ def resend_reset_code(request):
             # Generate new code
             reset_code = generate_verification_code()
             request.session['reset_code'] = reset_code
-            request.session['code_generated_at'] = timezone.now().timestamp()
+            request.session['code_generated_at'] = datetime.now(timezone.utc).timestamp()
 
             # Send new code
             send_reset_code_email(reset_email, reset_code)

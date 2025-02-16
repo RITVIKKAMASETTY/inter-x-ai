@@ -142,6 +142,35 @@
                 padding: 15px;
             }
         }
+        .container {
+    min-height: 100vh; /* Ensure the container spans the full height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.card {
+    width: 100%;
+    max-width: 450px; /* Set a balanced width for the form */
+    padding: 30px; /* More padding for better spacing */
+    border-radius: 15px;
+}
+
+@media (max-width: 768px) {
+    .card {
+        max-width: 90%;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        max-width: 95%;
+        padding: 15px;
+    }
+}
+
     </style>
 </head>
 <body>

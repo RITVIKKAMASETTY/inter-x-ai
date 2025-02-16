@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Flashcards Generator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 90%;
+            margin: auto;
+        }
+
+        input {
+            width: 80%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+        }
+
+        #loading {
+            display: none;
+            font-size: 18px;
+            margin: 20px;
+        }
+
+        .flashcards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            height: 100px;
+            text-align: center;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: scale(1.2);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
+            height: auto;
+            white-space: normal;
+            text-overflow: clip;
+            z-index: 10;
+            position: relative;
+        }
+
+        @media (max-width: 600px) {
+            input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Enter YouTube Video URL</h2>
+        <input type="text" id="youtube_url" placeholder="Paste YouTube video link here...">
+        <br>
+        <button id="generateBtn">Generate Flashcards</button>
+        <div id="loading">⏳ Processing, please wait...</div>
+
+        <h2>Flashcards:</h2>
+        <div class="flashcards" id="flashcardContainer"></div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#generateBtn").click(function() {
+                var youtube_url = $("#youtube_url").val();
+                if (!youtube_url) {
+                    alert("Please enter a YouTube URL.");
+                    return;
+                }
+
+                $("#generateBtn").prop("disabled", true);
+                $("#loading").show();
+                $("#flashcardContainer").html("");
+
+                $.ajax({
+                    url: "/process",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ youtube_url: youtube_url }),
+                    success: function(response) {
+                        $("#loading").hide();
+                        $("#generateBtn").prop("disabled", false);
+                        
+                        if (response.flashcards) {
+                            let flashcards = response.flashcards.split("\n");
+                            flashcards.forEach(card => {
+                                if (card.trim()) {
+                                    $("#flashcardContainer").append(`<div class='card'>${card}</div>`);
+                                }
+                            });
+                        } else {
+                            $("#flashcardContainer").append("<p>Error generating flashcards.</p>");
+                        }
+                    },
+                    error: function() {
+                        $("#loading").hide();
+                        $("#generateBtn").prop("disabled", false);
+                        alert("Error processing request.");
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

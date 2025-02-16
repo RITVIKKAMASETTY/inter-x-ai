@@ -655,7 +655,7 @@ def companyDashboard(request):
         messages.error(request,"Become a Organization first")
         return redirect('home')
     else :
-        return render(request,'organization/companydashboard.html')
+        return render(request,'organization/companydashboard.html',{'us' : us})
 
 
 def fetch_leetcode_stats(username):

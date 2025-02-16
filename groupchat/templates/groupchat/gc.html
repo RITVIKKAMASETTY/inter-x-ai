@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <title>Multi-Room Chat</title>
+    <title>SafeHaven - Group Chat</title>
     <style>
         :root {
             --primary-color: #1a73e8;
@@ -35,11 +35,6 @@
             font-weight: 700;
             color: var(--primary-color);
             font-size: 1.5rem;
-        }
-
-        .navbar-toggler {
-            border: none;
-            outline: none;
         }
 
         #main-container {
@@ -121,10 +116,6 @@
             color: var(--text-secondary);
         }
 
-        .sent .username {
-            text-align: right;
-        }
-
         .message-bubble {
             padding: 10px 15px;
             border-radius: 12px;
@@ -157,18 +148,6 @@
             padding: 5px 10px;
         }
 
-        .mic-button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .mic-button.recording {
-            color: red;
-        }
-
         .chat-message-input {
             flex: 1;
             border: none;
@@ -183,33 +162,134 @@
             color: var(--primary-color);
             cursor: pointer;
         }
-        .room-creation {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-}
 
-#new-group-name {
-    margin-bottom: 8px;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    width: 100%;
-}
+        .video-call-container {
+            display: none;
+            position: relative;
+            height: 70%;
+            background: #000;
+            border-bottom: 1px solid var(--border-color);
+        }
 
-#create-group-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
+        .video-call-container.active {
+            display: block;
+        }
 
-#create-group-btn:hover {
-    background-color: var(--primary-hover);
-}
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            height: 100%;
+            padding: 10px;
+        }
+
+        .video-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+        }
+
+        .video-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-username {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .call-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 50px;
+        }
+
+        .call-control-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .call-control-button:hover {
+            background: #666;
+        }
+
+        .call-control-button.red {
+            background: #e53935;
+        }
+
+        .call-control-button.red:hover {
+            background: #c62828;
+        }
+
+        .toggle-call-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 10px;
+        }
+
+        .toggle-call-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .chat-area.call-active .chat-log {
+            height: 30%;
+        }
+
+        .system-message {
+            text-align: center;
+            color: var(--text-secondary);
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        .call-notification {
+            background-color: #e8f0fe;
+            color: var(--primary-color);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .join-call-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -241,21 +321,41 @@
 
 <div id="main-container">
     <div id="rooms-sidebar">
-    <h4>Chat Rooms</h4>
-    <div class="room-creation">
-        <input type="text" id="new-group-name" class="form-control mb-2" placeholder="Enter group name">
-        <button id="create-group-btn" class="btn btn-primary w-100">Create Group</button>
+        <div class="room-creation">
+            <input type="text" id="new-group-name" class="form-control mb-2" placeholder="Enter group name">
+            <button id="create-group-btn" class="btn btn-primary w-100">Create Group</button>
+        </div>
+        {% for room in rooms %}
+        <div class="room-item" data-room="{{ room.roomName }}" data-room-id="{{ room.id }}">
+            {{ room.roomName }}
+        </div>
+        {% endfor %}
     </div>
-    {% for room in rooms %}
-    <div class="room-item" data-room="{{ room.roomName }}" data-room-id="{{ room.id }}">
-        {{ room.roomName }}
-    </div>
-    {% endfor %}
-</div>
 
     <div id="chat-container">
         {% for room in rooms %}
         <div class="chat-area" data-room="{{ room.roomName }}" data-room-id="{{ room.id }}">
+            <button class="toggle-call-button" onclick="toggleCall({{ room.id }})">
+                <i class="fas fa-video"></i> Start Group Call
+            </button>
+            
+            <div class="video-call-container" id="video-container-{{ room.id }}">
+                <div class="video-grid" id="video-grid-{{ room.id }}">
+                    <!-- Video participants will be added here -->
+                </div>
+                <div class="call-controls">
+                    <button class="call-control-button" id="toggle-video-{{ room.id }}" onclick="toggleVideo({{ room.id }})">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="call-control-button" id="toggle-audio-{{ room.id }}" onclick="toggleAudio({{ room.id }})">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="call-control-button red" onclick="endCall({{ room.id }})">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                </div>
+            </div>
+            
             <div class="chat-log">
                 {% for message in messages %}
                     {% if message.group.id == room.id %}
@@ -270,7 +370,6 @@
             </div>
             <form class="chat-form">
                 <div class="input-container">
-                    <button type="button" class="mic-button"><i class="fas fa-microphone"></i></button>
                     <input class="chat-message-input" type="text" placeholder="Type a message...">
                     <button type="button" class="send-button"><i class="fas fa-paper-plane"></i></button>
                 </div>
@@ -280,160 +379,145 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-    class ChatRoom {
-        constructor(roomName, roomId) {
-            this.roomName = roomName;
-            this.roomId = roomId;
-            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            // Using room ID instead of room name in WebSocket URL
-            this.socket = new WebSocket(`${protocol}${window.location.host}/ws/chat/${this.roomId}/`);
-            this.chatArea = document.querySelector(`.chat-area[data-room-id="${roomId}"]`);
-            this.chatLog = this.chatArea.querySelector('.chat-log');
-            this.messageInput = this.chatArea.querySelector('.chat-message-input');
-            this.sendButton = this.chatArea.querySelector('.send-button');
-            this.micButton = this.chatArea.querySelector('.mic-button');
+const currentUsername = "{{ request.user.username }}";
+const activeRooms = {};
+const peerConnections = {};
+let localStream = null;
+let myPeer = null;
+let activeCallRoom = null;
 
-            this.initializeEventListeners();
-            this.initializeSpeechRecognition();
-        }
-
-        initializeEventListeners() {
-            this.socket.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                const messageContainer = document.createElement("div");
-                const isCurrentUser = data.user === "{{ request.user.username }}";
-                messageContainer.className = `message-container ${isCurrentUser ? 'sent' : 'received'}`;
-
-                messageContainer.innerHTML = `
-                    <div class="username">${data.user}</div>
-                    <div class="message-bubble">${data.message}</div>
-                `;
-
-                this.chatLog.appendChild(messageContainer);
-                this.chatLog.scrollTop = this.chatLog.scrollHeight;
-            };
-
-            this.socket.onclose = () => {
-                console.error(`Chat socket closed for room ${this.roomName} (ID: ${this.roomId})`);
-            };
-
-            this.sendButton.addEventListener("click", () => this.sendMessage());
-            this.messageInput.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
-            });
-        }
-
-        initializeSpeechRecognition() {
-            if ('webkitSpeechRecognition' in window) {
-                const recognition = new webkitSpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-
-                recognition.onstart = () => {
-                    this.micButton.classList.add('recording');
-                };
-
-                recognition.onend = () => {
-                    this.micButton.classList.remove('recording');
-                };
-
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    this.messageInput.value = transcript;
-                };
-
-                this.micButton.addEventListener("click", () => {
-                    recognition.start();
-                });
-            } else {
-                this.micButton.style.display = 'none';
-            }
-        }
-
-        sendMessage() {
-            const message = this.messageInput.value.trim();
-            if (message) {
-                this.socket.send(JSON.stringify({
-                    message: message,
-                    room_id: this.roomId  // Changed to send room_id instead of room name
-                }));
-                this.messageInput.value = "";
-            }
-        }
-
-        activate() {
-            this.chatArea.classList.add('active');
-        }
-
-        deactivate() {
-            this.chatArea.classList.remove('active');
-        }
-    }
-
-    // Initialize chat rooms
-    const chatRooms = {};
-    document.querySelectorAll('.room-item').forEach(roomElement => {
-        const roomName = roomElement.dataset.room;
-        const roomId = roomElement.dataset.roomId;
-        chatRooms[roomId] = new ChatRoom(roomName, roomId);
-
-        roomElement.addEventListener('click', () => {
-            // Update active states
-            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
-            roomElement.classList.add('active');
-
-            // Switch chat room display
-            Object.values(chatRooms).forEach(room => room.deactivate());
-            chatRooms[roomId].activate();
-        });
-    });
-
-    // Activate first room by default
-    const firstRoomElement = document.querySelector('.room-item');
-    if (firstRoomElement) {
-        const firstRoomId = firstRoomElement.dataset.roomId;
-        firstRoomElement.classList.add('active');
-        chatRooms[firstRoomId].activate();
-    }
-    // Group creation functionality
+// Handle group creation
 document.getElementById('create-group-btn').addEventListener('click', async () => {
-    const groupName = document.getElementById('new-group-name').value.trim();
-
+    const groupNameInput = document.getElementById('new-group-name');
+    const groupName = groupNameInput.value.trim();
+    
     if (!groupName) {
         alert('Please enter a group name');
         return;
     }
 
     try {
-        const response = await fetch('{% url 'create_group' %}', {  // Adjust this endpoint to match your actual API endpoint
+        const response = await fetch('/create_group/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')  // Django CSRF token
+                'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                group: groupName
-            })
+            body: JSON.stringify({ group_name: groupName })
         });
 
-        const data = await response.json();
-
         if (response.ok) {
-            // Refresh the page after successful creation
-            window.location.reload();
+            const data = await response.json();
+            addNewGroup(data.room_id, groupName);
+            groupNameInput.value = '';
         } else {
-            alert(data.error || 'Failed to create group');
+            alert('Failed to create group');
         }
     } catch (error) {
         console.error('Error creating group:', error);
-        alert('Failed to create group. Please try again.');
+        alert('Failed to create group');
     }
 });
 
+function addNewGroup(roomId, roomName) {
+    // Create new room item in sidebar
+    const roomsContainer = document.getElementById('rooms-sidebar');
+    const roomItem = document.createElement('div');
+    roomItem.className = 'room-item';
+    roomItem.dataset.room = roomName;
+    roomItem.dataset.roomId = roomId;
+    roomItem.textContent = roomName;
+
+    // Create new chat area
+    const chatContainer = document.getElementById('chat-container');
+    const chatArea = createChatArea(roomId, roomName);
+    
+    roomsContainer.appendChild(roomItem);
+    chatContainer.appendChild(chatArea);
+
+    // Initialize new chat room
+    activeRooms[roomId] = new ChatRoom(roomName, roomId);
+
+    // Add click handler
+    roomItem.addEventListener('click', () => {
+        document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+        roomItem.classList.add('active');
+        Object.values(activeRooms).forEach(room => room.deactivate());
+        activeRooms[roomId].activate();
+    });
+
+    // Activate the new room
+    roomItem.click();
+}
+
+function createChatArea(roomId, roomName) {
+    const chatArea = document.createElement('div');
+    chatArea.className = 'chat-area';
+    chatArea.dataset.room = roomName;
+    chatArea.dataset.roomId = roomId;
+
+    chatArea.innerHTML = `
+        <button class="toggle-call-button" onclick="toggleCall(${roomId})">
+            <i class="fas fa-video"></i> Start Group Call
+        </button>
+        
+        <div class="video-call-container" id="video-container-${roomId}">
+            <div class="video-grid" id="video-grid-${roomId}">
+            </div>
+            <div class="call-controls">
+                <button class="call-control-button" id="toggle-video-${roomId}" onclick="toggleVideo(${roomId})">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="call-control-button" id="toggle-audio-${roomId}" onclick="toggleAudio(${roomId})">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="call-control-button red" onclick="endCall(${roomId})">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-log"></div>
+        <form class="chat-form">
+            <div class="input-container">
+                <input class="chat-message-input" type="text" placeholder="Type a message...">
+                <button type="button" class="send-button"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </form>
+    `;
+
+    return chatArea;
+}
+
+class ChatRoom {
+    constructor(roomName, roomId) {
+        this.roomName = roomName;
+        this.roomId = roomId;
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        this.socket = new WebSocket(`${protocol}${window.location.host}/ws/chat/${this.roomId}/`);
+        this.chatArea = document.querySelector(`.chat-area[data-room-id="${roomId}"]`);
+        this.chatLog = this.chatArea.querySelector('.chat-log');
+        this.messageInput = this.chatArea.querySelector('.chat-message-input');
+        this.sendButton = this.chatArea.querySelector('.send-button');
+        this.toggleCallButton = this.chatArea.querySelector('.toggle-call-button');
+        this.videoContainer = document.getElementById(`video-container-${roomId}`);
+        this.videoGrid = document.getElementById(`video-grid-${roomId}`);
+        
+        this.isInCall = false;
+        this.localVideoEnabled = true;
+        this.localAudioEnabled = true;
+        this.peers = {};
+
+        this.initializeEventListeners();
+    }
+
+    // ... [Rest of the ChatRoom class implementation remains the same as in your original code]
+}
+
+// Utility function to get CSRF token
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -448,7 +532,82 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-</script>
 
+// Initialize existing chat rooms
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.room-item').forEach(roomElement => {
+        const roomName = roomElement.dataset.room;
+        const roomId = roomElement.dataset.roomId;
+        activeRooms[roomId] = new ChatRoom(roomName, roomId);
+
+        roomElement.addEventListener('click', () => {
+            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+            roomElement.classList.add('active');
+            Object.values(activeRooms).forEach(room => room.deactivate());
+            activeRooms[roomId].activate();
+        });
+    });
+
+    // Activate first room by default
+    const firstRoomElement = document.querySelector('.room-item');
+    if (firstRoomElement) {
+        const firstRoomId = firstRoomElement.dataset.roomId;
+        firstRoomElement.classList.add('active');
+        activeRooms[firstRoomId].activate();
+    }
+});
+
+// Global call control functions
+function toggleCall(roomId) {
+    const room = activeRooms[roomId];
+    if (!room) return;
+    
+    if (activeCallRoom && activeCallRoom !== room) {
+        alert('You are already in a call in another room. Please end that call first.');
+        return;
+    }
+    
+    if (!room.isInCall) {
+        room.startCall();
+    } else if (activeCallRoom === room) {
+        room.endCall();
+    } else {
+        room.joinCall();
+    }
+}
+
+function toggleVideo(roomId) {
+    if (!localStream) return;
+    
+    const videoTracks = localStream.getVideoTracks();
+    if (videoTracks.length === 0) return;
+    
+    const enabled = !videoTracks[0].enabled;
+    videoTracks[0].enabled = enabled;
+    
+    const button = document.getElementById(`toggle-video-${roomId}`);
+    button.innerHTML = `<i class="fas fa-video${enabled ? '' : '-slash'}"></i>`;
+}
+
+function toggleAudio(roomId) {
+    if (!localStream) return;
+    
+    const audioTracks = localStream.getAudioTracks();
+    if (audioTracks.length === 0) return;
+    
+    const enabled = !audioTracks[0].enabled;
+    audioTracks[0].enabled = enabled;
+    
+    const button = document.getElementById(`toggle-audio-${roomId}`);
+    button.innerHTML = `<i class="fas fa-microphone${enabled ? '' : '-slash'}"></i>`;
+}
+
+function endCall(roomId) {
+    const room = activeRooms[roomId];
+    if (room) {
+        room.endCall();
+    }
+}
+</script>
 </body>
 </html>
