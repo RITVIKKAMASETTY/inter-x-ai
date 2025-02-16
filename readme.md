@@ -87,7 +87,7 @@ InterXAI aims to bridge this gap by providing an AI-powered interview and coding
 ## Tech Stack
 
 - Frontend: HTML, CSS, JavaScript
-- Backend: Flask (Python)
+- Backend: Flask, Django
 - Database: PostgreSQL (Hosted on Render)
 - AI Services: Grok API (for coding evaluation), Speech-to-Text (for interview analysis)
 - Deployment: Render (Backend & Database), Vercel (Frontend)
