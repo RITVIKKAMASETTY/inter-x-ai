@@ -1,10 +1,3 @@
-# *Nexgen 2.0*  
-## *InterXAI - Revolutionizing Interview Preparation and Recruitment*
-
-### 🚀 *Team Name: **Codezero*  
-### 🏅 *Team Number: **12*
-## Problem Statement
-
 ## *InterXAI: Revolutionizing Interview Preparation and Recruitment*
 
 In today's competitive job market, traditional interview preparation methods often *fail to align* with real-world hiring processes. Candidates struggle with mock interviews that lack *real-time feedback, and companies face **inefficiencies* in evaluating potential hires.
